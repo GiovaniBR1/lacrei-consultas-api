@@ -1,15 +1,20 @@
-from unittest.mock import patch
+import logging
+from unittest.mock import MagicMock, patch
 
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from apps.core.exceptions import custom_exception_handler
+from apps.core.logging import RequestIdFilter, get_request_id
 
 
 class HealthReadyTests(APITestCase):
     def test_health_returns_200_without_db(self) -> None:
-        response = self.client.get("/health/")
+        with patch("apps.core.views.connection") as mock_conn:
+            response = self.client.get("/health/")
+            mock_conn.ensure_connection.assert_not_called()
+            mock_conn.cursor.assert_not_called()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["status"], "ok")
 
@@ -20,13 +25,18 @@ class HealthReadyTests(APITestCase):
 
     def test_ready_returns_503_when_db_down(self) -> None:
         with patch("apps.core.views.connection") as mock_conn:
-            mock_conn.ensure_connection.side_effect = RuntimeError("db down")
+            mock_conn.ensure_connection.side_effect = RuntimeError(
+                "connection to server at postgres://secret@db failed"
+            )
             response = self.client.get("/ready/")
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         body = response.json()
         self.assertEqual(body["code"], "db_unavailable")
         self.assertIn("detail", body)
         self.assertEqual(body["errors"], {})
+        payload = str(body)
+        self.assertNotIn("postgres://", payload)
+        self.assertNotIn("secret@", payload)
 
 
 class RequestIdTests(APITestCase):
@@ -44,6 +54,22 @@ class RequestIdTests(APITestCase):
         response = self.client.get("/health/", HTTP_X_REQUEST_ID="bad id with spaces")
         self.assertNotEqual(response.headers["X-Request-ID"], "bad id with spaces")
         self.assertTrue(len(response.headers["X-Request-ID"]) >= 8)
+
+    def test_discards_oversized_request_id(self) -> None:
+        oversized = "a" * 129
+        response = self.client.get("/health/", HTTP_X_REQUEST_ID=oversized)
+        self.assertNotEqual(response.headers["X-Request-ID"], oversized)
+        self.assertLessEqual(len(response.headers["X-Request-ID"]), 128)
+
+    def test_request_id_available_to_structured_logs(self) -> None:
+        rid = "log-correlation-id-42"
+        response = self.client.get("/health/", HTTP_X_REQUEST_ID=rid)
+        self.assertEqual(response.headers["X-Request-ID"], rid)
+        self.assertEqual(get_request_id(), rid)
+
+        record = MagicMock(spec=logging.LogRecord)
+        RequestIdFilter().filter(record)
+        self.assertEqual(record.request_id, rid)
 
 
 class ExceptionEnvelopeTests(APITestCase):
