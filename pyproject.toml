@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "consultas-api"
+version = "0.1.0"
+description = "API de consultas médicas — Lacrei Saúde (desafio Tech Lead)"
+authors = ["Candidato Tech Lead"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.14"
+Django = "5.2.17"
+djangorestframework = "3.18.0"
+psycopg = { version = "3.3.4", extras = ["binary"] }
+gunicorn = "26.0.0"
+django-environ = "0.14.0"
+django-cors-headers = "4.9.0"
+djangorestframework-simplejwt = "5.5.1"
+drf-spectacular = "0.30.0"
+django-filter = "26.1"
+httpx = "0.28.1"
+whitenoise = "6.12.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "0.16.2"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["apps", "config"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ"]
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
