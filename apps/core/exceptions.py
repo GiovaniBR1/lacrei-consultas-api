@@ -5,8 +5,17 @@ from __future__ import annotations
 from typing import Any
 
 from rest_framework import status
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
+
+
+class ConsultaConflito(APIException):
+    """Slot de agenda já ocupado por outra consulta agendada."""
+
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "Já existe consulta agendada para este profissional neste horário."
+    default_code = "consulta_conflito"
 
 
 def _normalize_errors(detail: Any) -> dict[str, Any]:

@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory, APITestCase
 
-from apps.core.exceptions import custom_exception_handler
+from apps.core.exceptions import ConsultaConflito, custom_exception_handler
 from apps.core.logging import RequestIdFilter, get_request_id
 
 
@@ -83,3 +83,16 @@ class ExceptionEnvelopeTests(APITestCase):
         self.assertEqual(response.data["code"], "validation_error")
         self.assertIn("detail", response.data)
         self.assertIn("nome_social", response.data["errors"])
+
+    def test_consulta_conflito_envelope_shape(self) -> None:
+        factory = APIRequestFactory()
+        request = factory.post("/api/v1/consultas/")
+        response = custom_exception_handler(ConsultaConflito(), {"request": request})
+        assert response is not None
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "consulta_conflito")
+        self.assertEqual(
+            response.data["detail"],
+            "Já existe consulta agendada para este profissional neste horário.",
+        )
+        self.assertEqual(response.data["errors"], {})
