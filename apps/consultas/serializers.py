@@ -11,6 +11,9 @@ class ConsultaSerializer(serializers.ModelSerializer):
         model = Consulta
         fields = ("id", "profissional", "data_hora", "status", "criado_em", "atualizado_em")
         read_only_fields = ("id", "criado_em", "atualizado_em")
+        # Sem isto o DRF deriva um UniqueTogetherValidator da constraint parcial e responde 400.
+        # O conflito de agenda é decidido pelo banco e traduzido para 409 na view (AD-007).
+        validators = ()
 
     def validate(self, attrs: dict) -> dict:
         status = attrs.get("status") or getattr(self.instance, "status", Consulta.Status.AGENDADA)
