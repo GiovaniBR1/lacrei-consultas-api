@@ -1,0 +1,116 @@
+# Domínio: profissionais e consultas
+
+Contrato da Fase 2 da API. Base para o OpenAPI da Fase 5.
+
+## Modelo
+
+```mermaid
+erDiagram
+  PROFISSIONAL ||--o{ CONSULTA : realiza
+
+  PROFISSIONAL {
+    uuid id PK
+    string nome_social
+    string profissao
+    string endereco
+    string contato
+    string asaas_wallet_id "opcional"
+    datetime criado_em
+    datetime atualizado_em
+  }
+
+  CONSULTA {
+    uuid id PK
+    uuid profissional_id FK
+    datetime data_hora "TZ-aware"
+    string status "agendada|cancelada|concluida"
+    datetime criado_em
+    datetime atualizado_em
+  }
+```
+
+`Profissional` guarda apenas nome de tratamento. Nome civil, CPF, orientação sexual e identidade de gênero não existem no schema nem são aceitos no payload: o serializer declara campos explícitos, então qualquer chave extra é descartada.
+
+Excluir um profissional apaga as consultas dele em cascata. A trava financeira entra na Fase 6: `Cobranca` aponta para `Consulta` com `PROTECT`, e aí a exclusão passa a falhar quando existe cobrança confirmada ou recebida.
+
+## Endpoints
+
+| Método | Rota | Sucesso | Erros |
+| --- | --- | --- | --- |
+| POST | `/api/v1/profissionais/` | 201 | 400 `validation_error` |
+| GET | `/api/v1/profissionais/` | 200 (sem `contato`) | — |
+| GET | `/api/v1/profissionais/{id}/` | 200 (com `contato`) | 404 `not_found` |
+| PUT/PATCH | `/api/v1/profissionais/{id}/` | 200 | 400 `validation_error`, 404 `not_found` |
+| DELETE | `/api/v1/profissionais/{id}/` | 204 | 404 `not_found` |
+| POST | `/api/v1/consultas/` | 201 | 400 `validation_error`, **409 `consulta_conflito`** |
+| GET | `/api/v1/consultas/` | 200 | 400 `validation_error` (filtro malformado) |
+| GET | `/api/v1/consultas/{id}/` | 200 | 404 `not_found` |
+| PUT/PATCH | `/api/v1/consultas/{id}/` | 200 | 400 `validation_error`, 409 `consulta_conflito`, 404 `not_found` |
+| DELETE | `/api/v1/consultas/{id}/` | 204 | 404 `not_found` |
+
+`contato` sai da listagem por minimização de dado pessoal e volta no detalhe.
+
+### Filtros de consulta
+
+| Parâmetro | Efeito |
+| --- | --- |
+| `profissional=<uuid>` | Consultas do profissional |
+| `status=agendada\|cancelada\|concluida` | Filtra por status |
+| `data_hora_after=<ISO-8601>` | A partir do instante (inclusive) |
+| `data_hora_before=<ISO-8601>` | Até o instante (inclusive) |
+| `ordering=data_hora` / `ordering=-data_hora` | Ordenação; o default é `-data_hora` |
+
+**Política do filtro sem resultado:** `?profissional=<uuid válido que não existe>` devolve **200 com lista vazia**, nunca 404. O 404 fica reservado para acesso a um recurso por id. Um valor que não é UUID devolve 400 `validation_error`.
+
+## Contrato de erro
+
+Toda resposta de erro usa o mesmo envelope:
+
+```json
+{
+  "code": "consulta_conflito",
+  "detail": "Já existe consulta agendada para este profissional neste horário.",
+  "errors": {}
+}
+```
+
+`errors` traz o mapa `campo -> [mensagens]` em erros de validação e fica vazio nos demais.
+
+## Regra de agenda (anti–double booking)
+
+A fonte da verdade é o banco:
+
+```
+UNIQUE (profissional_id, data_hora) WHERE status = 'agendada'
+```
+
+Uma segunda consulta `agendada` no mesmo slot falha no `INSERT`. A view salva dentro de `transaction.atomic()`, e ao receber `IntegrityError` reconfirma o slot para classificar o erro e responder 409 `consulta_conflito`. Duas consequências deliberadas:
+
+- Cancelar libera o horário: com `status='cancelada'` a linha sai do índice parcial e o slot volta a aceitar agendamento.
+- Não há checagem prévia em Python. Uma verificação antes do insert perderia a corrida entre dois workers; a constraint não perde.
+
+Os validators derivados do DRF ficam desligados em `ConsultaSerializer.Meta` (`validators = ()`). Sem isso o DRF geraria um `UniqueTogetherValidator` a partir da constraint e responderia 400, escondendo o 409 exigido pelo contrato.
+
+## Timezone
+
+`TIME_ZONE=America/Sao_Paulo` com `USE_TZ=True`. Instantes são gravados em UTC e devolvidos com offset `-03:00`. Consultas com `status=agendada` não aceitam `data_hora` no passado; `cancelada` e `concluida` aceitam, porque são registro histórico.
+
+## Migrations: política expand/contract
+
+Migrations são versionadas por app (`apps/<app>/migrations/`) e passam pelo lint: depois de `makemigrations`, rode `ruff format` no arquivo gerado (as migrations não estão excluídas do lint, então o `make lint` cobra isso).
+
+Mudança de schema em duas etapas, nunca uma só:
+
+1. **Expand** — adicionar coluna nova como nullable ou com default, criar índice/constraint nova, deployar e fazer backfill. O código antigo continua funcionando.
+2. **Contract** — só depois que nenhuma release ativa usa a coluna antiga, removê-la em uma migration separada.
+
+Regra prática: nada de `AlterField` destrutivo ou `RemoveField` no mesmo deploy do código que depende da mudança. Isso é o que mantém o rollback da Fase 9 possível — voltar a versão anterior da aplicação não pode encontrar um schema que ela não sabe ler.
+
+## Limitações honestas desta fase
+
+| Limitação | Onde resolve |
+| --- | --- |
+| Sem paginação: as listagens devolvem todos os registros (AD-018) | Fase 5, junto com o OpenAPI |
+| Permissão default `AllowAny`; os testes já autenticam para o flip não quebrar a suíte (AD-019) | Fase 3 (JWT + `IsAuthenticated`) |
+| Suíte local roda em SQLite; o índice parcial é suportado, mas o dialeto de produção é Postgres 16 (AD-017) | Fase 7 (CI em Postgres) |
+| `asaas_wallet_id` existe no modelo mas nenhum fluxo de pagamento o usa | Fase 6 |
