@@ -1,8 +1,11 @@
 """Endpoints CRUD de consultas. O banco decide o conflito de agenda; aqui só traduzimos."""
 
 from django.db import IntegrityError, transaction
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
+from rest_framework.filters import OrderingFilter
 
+from apps.consultas.filters import ConsultaFilter
 from apps.consultas.models import Consulta
 from apps.consultas.serializers import ConsultaSerializer
 from apps.core.exceptions import ConsultaConflito
@@ -11,6 +14,10 @@ from apps.core.exceptions import ConsultaConflito
 class ConsultaViewSet(viewsets.ModelViewSet):
     queryset = Consulta.objects.select_related("profissional")
     serializer_class = ConsultaSerializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filterset_class = ConsultaFilter
+    ordering_fields = ("data_hora", "criado_em")
+    ordering = ("-data_hora",)
 
     def perform_create(self, serializer: ConsultaSerializer) -> None:
         self._salvar(serializer)
