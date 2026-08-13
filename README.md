@@ -86,7 +86,20 @@ O badge abaixo usa o nome proposto do repositório público (`lacrei-consultas-a
 
 `https://github.com/<owner>/lacrei-consultas-api/actions/workflows/ci.yml/badge.svg`
 
-Smoke de `/ready/` nas URLs Render entra na Fase 8 (bloqueado por AD-003).
+Smoke de `/ready/` nas URLs Render: ver runbook; execução bloqueada por AD-003.
+
+## Por que Render + blueprint AWS
+
+O aceite pede staging e produção na AWS **ou serviço equivalente**. O deploy oficial desta entrega é o [Render](https://render.com): dois Web Services (`api-staging`, `api-prod`) e **um** Postgres free compartilhado. AWS fica só como evolução: App Runner + ECR + RDS isolado por ambiente. Nada disso é provisionado agora (AD-003).
+
+Passos (Dashboard, sem Blueprint aplicável): [`docs/deploy-render.md`](docs/deploy-render.md). Decisão e caminho AWS: [`docs/adr/0002-render-e-blueprint-aws.md`](docs/adr/0002-render-e-blueprint-aws.md).
+
+| Ambiente | URL HTTPS | Status |
+| --- | --- | --- |
+| Staging (`api-staging`) | pendente | AD-003 — não inventar host `onrender.com` |
+| Produção (`api-prod`) | pendente | AD-003 — não inventar host `onrender.com` |
+
+Trade-offs conscientes do free tier: um único banco entre staging e produção; expiry ~30 dias; cold start após ~15 min idle. Isolamento real de dados entra no blueprint AWS (RDS ×2).
 
 ## Documentação
 
@@ -95,8 +108,8 @@ Smoke de `/ready/` nas URLs Render entra na Fase 8 (bloqueado por AD-003).
 | [`docs/dominio.md`](docs/dominio.md) | Modelo, endpoints, anti–double booking, cobrança/webhook, timezone, política de migrations |
 | [`docs/seguranca.md`](docs/seguranca.md) | JWT, throttle, CORS, logs sem PII, privacidade, mapa OWASP API Top 10 |
 | [`docs/adr/0001-asaas-mock-first.md`](docs/adr/0001-asaas-mock-first.md) | Asaas mock-first, split `percentualValue`, webhook idempotente |
+| [`docs/adr/0002-render-e-blueprint-aws.md`](docs/adr/0002-render-e-blueprint-aws.md) | Render agora; App Runner + ECR + RDS ×2 depois |
+| [`docs/deploy-render.md`](docs/deploy-render.md) | Runbook Render (não executar enquanto AD-003) |
 | [`docs/testes.md`](docs/testes.md) | Estratégia de teste, rastreabilidade e o gate de cobertura |
 
 Decisões de arquitetura e o histórico do processo ficam em `.specs/` na raiz do workspace.
-
-**Deploy Render:** pendente (AD-003) — configurar em sessão futura.

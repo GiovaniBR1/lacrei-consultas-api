@@ -87,3 +87,24 @@ class DeployAwsBlueprintAdrTests(SimpleTestCase):
     def test_expiry_postgres_free_e_upgrade(self) -> None:
         self.assertIn("30 dias", self.texto)
         self.assertIn("upgrade", self.texto)
+
+
+class DeployReadmeSectionTests(SimpleTestCase):
+    README = ROOT / "README.md"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = cls.README.read_text(encoding="utf-8")
+
+    def test_secao_por_que_render_e_blueprint_aws(self) -> None:
+        self.assertIn("Por que Render + blueprint AWS", self.texto)
+
+    def test_links_runbook_e_adr(self) -> None:
+        self.assertIn("docs/deploy-render.md", self.texto)
+        self.assertIn("docs/adr/0002-render-e-blueprint-aws.md", self.texto)
+
+    def test_urls_pendentes_sem_host_fabricado(self) -> None:
+        self.assertIn("AD-003", self.texto)
+        self.assertIn("pendente", self.texto.lower())
+        self.assertNotRegex(self.texto, r"https://[a-z0-9-]+\.onrender\.com")
