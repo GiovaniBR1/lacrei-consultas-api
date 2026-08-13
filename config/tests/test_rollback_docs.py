@@ -30,3 +30,21 @@ class RollbackRunbookTests(SimpleTestCase):
         self.assertIn("latest", self.texto)
         self.assertIn("proibida", self.texto.lower())
         self.assertIn("AD-029", self.texto)
+
+
+class RollbackExpandContractTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = RUNBOOK.read_text(encoding="utf-8")
+
+    def test_explica_expand_antes_de_contract(self) -> None:
+        self.assertIn("Expand", self.texto)
+        self.assertIn("Contract", self.texto)
+
+    def test_liga_dominio_md(self) -> None:
+        self.assertIn("docs/dominio.md", self.texto)
+
+    def test_rollback_exige_schema_legivel(self) -> None:
+        self.assertIn("release anterior", self.texto.lower())
+        self.assertIn("schema", self.texto.lower())

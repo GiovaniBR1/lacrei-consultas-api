@@ -20,3 +20,15 @@ A tag **`latest` é proibida como único identificador**. `latest` se move. “R
 6. Preencha o slot de evidência (seção posterior; valores `pendente` até existir URL real).
 
 Se o deploy anterior **não** estiver na lista (retention curta do free tier), o fallback é um novo deploy **do mesmo SHA** a partir do GitHub, ainda assim identificando o SHA — nunca `latest`.
+
+## Schema: expand/contract
+
+Rollback de **código** só é seguro se a release anterior ainda consegue ler o banco. A política está em [`docs/dominio.md`](dominio.md) (seção Migrations). Resumo operacional:
+
+1. **Expand** — adicionar coluna/índice compatível (nullable ou com default). Deployar. Backfill se precisar. O binário antigo continua funcionando.
+2. **Contract** — remover coluna/índice antigo só depois que nenhuma release ativa depende dele. Deploy separado.
+
+Não faça `RemoveField` / `AlterField` destrutivo no mesmo deploy do código que passa a exigir o schema novo. Se fizer, o rollback do app encontra um banco que a versão anterior não sabe ler.
+
+Regra prática: se o incidente é só de código, volte o SHA. Se o incidente é de schema já contraído, o rollback de app **não** desfaz a migration — aí o caminho é uma migration de avanço (forward-fix), não um rewind.
+
