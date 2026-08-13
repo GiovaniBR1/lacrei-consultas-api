@@ -62,3 +62,28 @@ class DeployRenderTradeoffTests(SimpleTestCase):
     def test_cold_start_apos_idle(self) -> None:
         self.assertIn("15 min", self.texto)
         self.assertIn("cold start", self.texto.lower())
+
+
+class DeployAwsBlueprintAdrTests(SimpleTestCase):
+    ADR = ROOT / "docs" / "adr" / "0002-render-e-blueprint-aws.md"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = cls.ADR.read_text(encoding="utf-8")
+
+    def test_adr_existe(self) -> None:
+        self.assertTrue(self.ADR.is_file())
+
+    def test_blueprint_app_runner_ecr_rds(self) -> None:
+        self.assertIn("App Runner", self.texto)
+        self.assertIn("ECR", self.texto)
+        self.assertIn("RDS", self.texto)
+
+    def test_rds_por_ambiente_sem_provisionar(self) -> None:
+        self.assertIn("por ambiente", self.texto)
+        self.assertIn("não provisiona", self.texto.lower())
+
+    def test_expiry_postgres_free_e_upgrade(self) -> None:
+        self.assertIn("30 dias", self.texto)
+        self.assertIn("upgrade", self.texto)
