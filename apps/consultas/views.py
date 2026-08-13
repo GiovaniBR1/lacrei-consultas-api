@@ -1,6 +1,7 @@
 """Endpoints CRUD de consultas. O banco decide o conflito de agenda; aqui só traduzimos."""
 
 from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
@@ -11,6 +12,7 @@ from apps.consultas.models import Consulta
 from apps.consultas.serializers import ConsultaSerializer
 from apps.core.exceptions import ConsultaConflito
 from apps.core.schema import ERROS_ESCRITA_COM_CONFLITO, ERROS_LEITURA
+from apps.payments.exceptions import ConsultaComCobranca
 
 
 @extend_schema_view(
@@ -65,3 +67,9 @@ class ConsultaViewSet(viewsets.ModelViewSet):
             data_hora=data_hora,
             status=Consulta.Status.AGENDADA,
         ).exists()
+
+    def perform_destroy(self, instance: Consulta) -> None:
+        try:
+            instance.delete()
+        except ProtectedError as exc:
+            raise ConsultaComCobranca from exc

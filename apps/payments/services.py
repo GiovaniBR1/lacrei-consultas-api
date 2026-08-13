@@ -101,6 +101,19 @@ def aplicar_evento(tipo: str, asaas_payment_id: str) -> None:
     elif tipo == "PAYMENT_RECEIVED":
         _promover(cobranca, Cobranca.Status.RECEBIDA)
         cobranca.split_status = Cobranca.SplitStatus.CONCLUIDO
+    elif tipo == "PAYMENT_SPLIT_DIVERGENCE_BLOCK":
+        cobranca.split_status = Cobranca.SplitStatus.BLOQUEADO_DIVERGENCIA
+    elif tipo == "PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED":
+        cobranca.split_status = (
+            Cobranca.SplitStatus.CONCLUIDO
+            if cobranca.status == Cobranca.Status.RECEBIDA
+            else Cobranca.SplitStatus.CANCELADO
+        )
+    elif tipo == "PAYMENT_DELETED":
+        cobranca.status = Cobranca.Status.CANCELADA
+        cobranca.split_status = Cobranca.SplitStatus.CANCELADO
+    else:
+        return
 
     cobranca.save(update_fields=["status", "split_status", "atualizado_em"])
 
@@ -112,3 +125,13 @@ def _promover(cobranca: Cobranca, destino: str) -> None:
         return
     if novo > atual:
         cobranca.status = destino
+
+
+def atualizar_split(cobranca: Cobranca, split: list | None) -> Cobranca:
+    if split is None:
+        return cobranca
+    if split == []:
+        cobranca.split_ativo = False
+        cobranca.split_status = Cobranca.SplitStatus.CANCELADO
+        cobranca.save(update_fields=["split_ativo", "split_status", "atualizado_em"])
+    return cobranca
