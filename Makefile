@@ -1,4 +1,4 @@
-.PHONY: up down test lint migrate seed
+.PHONY: up down test lint migrate seed check-deploy
 
 PYTHON ?= .venv/Scripts/python.exe
 RUFF ?= .venv/Scripts/ruff.exe
@@ -21,3 +21,9 @@ migrate:
 
 seed:
 	$(PYTHON) manage.py seed --settings=config.settings.local
+
+# Valores dummy: o alvo só exercita os settings de produção, nunca toca no ambiente real.
+check-deploy: export SECRET_KEY=check-deploy-dummy-0123456789abcdefghijklmnopqrstuvwxyz-0123456789
+check-deploy: export ALLOWED_HOSTS=example.com
+check-deploy:
+	$(PYTHON) manage.py check --deploy --settings=config.settings.production
