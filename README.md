@@ -70,6 +70,24 @@ Regra de agenda: dois agendamentos no mesmo horário para o mesmo profissional c
 | `make migrate` / `make seed` | Schema e dados de exemplo |
 | `make up` / `make down` | Ambiente Docker |
 
+## CI
+
+O quality gate está em `.github/workflows/ci.yml` (push/PR em `main`):
+
+1. **lint** — `ruff check .` e `ruff format --check .`
+2. **security** — `manage.py check --deploy` (settings de produção + env dummy), gitleaks (`--redact`, allowlist só `.env.example`) e `pip-audit` (falha em qualquer advisory)
+3. **test** — service `postgres:16` + `DATABASE_URL` + suíte Django
+4. **build** — `docker build -t consultas-api:${{ github.sha }} .`
+5. **deploy** — só `workflow_dispatch`; se `RENDER_DEPLOY_HOOK` estiver vazio, o job sai 0 (AD-003)
+
+Local continua SQLite (AD-017). Postgres 16 é obrigação do CI.
+
+O badge abaixo usa o nome proposto do repositório público (`lacrei-consultas-api`, AD-013). Só fica verde depois do remote e do primeiro push:
+
+`https://github.com/<owner>/lacrei-consultas-api/actions/workflows/ci.yml/badge.svg`
+
+Smoke de `/ready/` nas URLs Render entra na Fase 8 (bloqueado por AD-003).
+
 ## Documentação
 
 | Documento | Conteúdo |

@@ -11,7 +11,6 @@ GITLEAKS = ROOT / ".gitleaks.toml"
 GITIGNORE = ROOT / ".gitignore"
 
 
-
 class CiWorkflowLintTests(SimpleTestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -116,7 +115,7 @@ class CiWorkflowDeployTests(SimpleTestCase):
         self.assertIn("if: github.event_name == 'workflow_dispatch'", self.texto)
 
     def test_deploy_skip_quando_hook_ausente(self) -> None:
-        self.assertIn('RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}', self.texto)
+        self.assertIn("RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}", self.texto)
         self.assertIn('if [ -z "$RENDER_DEPLOY_HOOK" ]', self.texto)
         self.assertIn("exit 0", self.texto)
 
