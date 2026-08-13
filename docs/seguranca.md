@@ -117,7 +117,7 @@ Não há soft-delete nem lixeira: exclusão é definitiva, o que atende ao direi
 | API1 Broken Object Level Authorization | Não aplicável por desenho: single-tenant, todo autenticado vê tudo (AD-006). Vira risco real no dia em que houver multi-tenant |
 | API2 Broken Authentication | JWT com TTL curto, rotação e blacklist; throttle dedicado no endpoint de credenciais |
 | API3 Broken Object Property Level Authorization | Serializers com campos explícitos; `contato` sai da listagem e só aparece no detalhe |
-| API4 Unrestricted Resource Consumption | Throttle por usuário/anônimo. **Gap conhecido**: sem paginação até a Fase 5 (AD-018) e cache de throttle por processo |
+| API4 Unrestricted Resource Consumption | Throttle por usuário/anônimo **e** paginação com teto de 100 por página (Fase 5). Resíduo: cache de throttle por processo |
 | API5 Broken Function Level Authorization | Permissão default fail-closed; exceções (token, probes) são explícitas e testadas |
 | API6 Unrestricted Access to Sensitive Business Flows | Anti–double booking no banco (`UniqueConstraint` parcial) impede corrida de agendamento |
 | API7 SSRF | Sem escopo: nenhuma URL fornecida pelo cliente é buscada pelo servidor. Reavaliar na Fase 6 (webhooks Asaas) |
@@ -130,7 +130,7 @@ Não há soft-delete nem lixeira: exclusão é definitiva, o que atende ao direi
 | Limitação | Onde resolve |
 | --- | --- |
 | Throttle conta por processo (`LocMemCache`) | Redis, fora do escopo do desafio |
-| Sem paginação: lista grande é um vetor de consumo de recurso (AD-018) | Fase 5 |
+| Documentação (`/api/docs/`, `/api/schema/`) é inventário de API; fica desligada em produção por `SPECTACULAR_ENABLED` (AD-025) | Decisão consciente |
 | Sem RBAC/multi-tenant (AD-006) | Non-goal declarado |
 | Bloqueio de exclusão com cobrança ainda não existe (SEC-09) | Fase 6 |
 | Suíte roda em SQLite no host local (AD-017) | Fase 7 (CI em Postgres 16) |

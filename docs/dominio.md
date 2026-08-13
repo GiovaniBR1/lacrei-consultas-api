@@ -50,6 +50,24 @@ Excluir um profissional apaga as consultas dele em cascata. A trava financeira e
 
 `contato` sai da listagem por minimização de dado pessoal e volta no detalhe.
 
+### Paginação
+
+Toda listagem é paginada (`PageNumberPagination`):
+
+```json
+{
+  "count": 42,
+  "next": "http://host/api/v1/consultas/?page=2",
+  "previous": null,
+  "results": [ ... ]
+}
+```
+
+| Parâmetro | Efeito |
+| --- | --- |
+| `page` | Página desejada; fora do intervalo devolve 404 `not_found` |
+| `page_size` | Tamanho da página; default 20, teto 100 (valor maior é limitado ao teto) |
+
 ### Filtros de consulta
 
 | Parâmetro | Efeito |
@@ -110,7 +128,7 @@ Regra prática: nada de `AlterField` destrutivo ou `RemoveField` no mesmo deploy
 
 | Limitação | Onde resolve |
 | --- | --- |
-| Sem paginação: as listagens devolvem todos os registros (AD-018) | Fase 5, junto com o OpenAPI |
+| ~~Sem paginação~~ — resolvido na Fase 5: listagens paginadas com teto de 100 (AD-018 fechado) | Fase 5 ✔ |
 | ~~Permissão default `AllowAny`~~ — resolvido na Fase 3: default `IsAuthenticated`, todas as rotas acima exigem Bearer JWT (ver `docs/seguranca.md`) | Fase 3 ✔ |
 | Suíte local roda em SQLite; o índice parcial é suportado, mas o dialeto de produção é Postgres 16 (AD-017) | Fase 7 (CI em Postgres) |
 | `asaas_wallet_id` existe no modelo mas nenhum fluxo de pagamento o usa | Fase 6 |
