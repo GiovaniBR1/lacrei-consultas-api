@@ -88,3 +88,11 @@ jobs:
         run: poetry install --no-interaction --no-ansi
       - name: Run tests
         run: poetry run python manage.py test --settings=config.settings.local
+
+  build:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker build
+        run: docker build -t consultas-api:${{ github.sha }} .

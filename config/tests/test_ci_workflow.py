@@ -89,3 +89,17 @@ class CiWorkflowSecurityTests(SimpleTestCase):
             check=True,
         )
         self.assertEqual(listados.stdout.strip(), "")
+
+
+class CiWorkflowBuildTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = WORKFLOW.read_text(encoding="utf-8")
+
+    def test_job_build_depende_de_test(self) -> None:
+        self.assertIn("build:", self.texto)
+        self.assertIn("needs: [test]", self.texto)
+
+    def test_docker_build_com_tag_sha(self) -> None:
+        self.assertIn("docker build -t consultas-api:${{ github.sha }} .", self.texto)
