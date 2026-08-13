@@ -32,3 +32,22 @@ Não faça `RemoveField` / `AlterField` destrutivo no mesmo deploy do código qu
 
 Regra prática: se o incidente é só de código, volte o SHA. Se o incidente é de schema já contraído, o rollback de app **não** desfaz a migration — aí o caminho é uma migration de avanço (forward-fix), não um rewind.
 
+## Evidência (pendente AD-003)
+
+Depois de um rollback **real** em staging, preencha esta tabela. Dois deploys + um rollback. Não invente URL nem SHA.
+
+| Campo | Valor |
+| --- | --- |
+| timestamp (ISO-8601, America/Sao_Paulo) | pendente (AD-003) |
+| URL HTTPS de staging | pendente (AD-003) |
+| SHA before (deploy ruim) | pendente (AD-003) |
+| SHA after (rollback) | pendente (AD-003) |
+| deploy id before / after | pendente (AD-003) |
+
+Enquanto AD-003 estiver ativo, os valores permanecem `pendente`. Não cole hostname `onrender.com` fabricado.
+
+## Sentry (opcional)
+
+`SENTRY_DSN` no env do Web Service. Se a variável estiver **ausente ou vazia**, pule: o plano de rollback não depende de error tracking. Se um DSN for fornecido depois, aponte o SDK ao mesmo DSN em staging primeiro.
+
+

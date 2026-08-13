@@ -110,6 +110,7 @@ Trade-offs conscientes do free tier: um único banco entre staging e produção;
 | [`docs/adr/0001-asaas-mock-first.md`](docs/adr/0001-asaas-mock-first.md) | Asaas mock-first, split `percentualValue`, webhook idempotente |
 | [`docs/adr/0002-render-e-blueprint-aws.md`](docs/adr/0002-render-e-blueprint-aws.md) | Render agora; App Runner + ECR + RDS ×2 depois |
 | [`docs/deploy-render.md`](docs/deploy-render.md) | Runbook Render (não executar enquanto AD-003) |
+| [`docs/rollback.md`](docs/rollback.md) | Rollback por SHA/deploy id; evidência pendente (AD-003) |
 | [`docs/testes.md`](docs/testes.md) | Estratégia de teste, rastreabilidade e o gate de cobertura |
 
 Decisões de arquitetura e o histórico do processo ficam em `.specs/` na raiz do workspace.
