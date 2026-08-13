@@ -47,6 +47,26 @@ class SchemaTests(APITestCase):
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         self.assertIn("text/html", resposta["Content-Type"])
 
+    def test_post_de_consulta_documenta_400_401_e_409(self) -> None:
+        respostas = self._schema_json()["paths"]["/api/v1/consultas/"]["post"]["responses"]
+
+        for codigo in ("400", "401", "409"):
+            self.assertIn(codigo, respostas, respostas.keys())
+
+    def test_exemplo_de_409_traz_o_code_do_conflito(self) -> None:
+        respostas = self._schema_json()["paths"]["/api/v1/consultas/"]["post"]["responses"]
+
+        exemplos = respostas["409"]["content"]["application/json"]["examples"]
+        valores = [exemplo["value"] for exemplo in exemplos.values()]
+        self.assertIn("consulta_conflito", [valor["code"] for valor in valores])
+
+    def test_exemplo_de_401_esta_no_crud_de_profissionais(self) -> None:
+        respostas = self._schema_json()["paths"]["/api/v1/profissionais/"]["get"]["responses"]
+
+        exemplos = respostas["401"]["content"]["application/json"]["examples"]
+        valores = [exemplo["value"] for exemplo in exemplos.values()]
+        self.assertIn("not_authenticated", [valor["code"] for valor in valores])
+
     @override_settings(SPECTACULAR_ENABLED=False)
     def test_documentacao_desligada_devolve_404(self) -> None:
         for url in (URL_SCHEMA, URL_DOCS):
