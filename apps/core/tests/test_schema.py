@@ -53,6 +53,15 @@ class SchemaTests(APITestCase):
         for codigo in ("400", "401", "409"):
             self.assertIn(codigo, respostas, respostas.keys())
 
+    def test_exemplo_de_400_traz_envelope_de_validacao(self) -> None:
+        respostas = self._schema_json()["paths"]["/api/v1/consultas/"]["post"]["responses"]
+
+        exemplos = respostas["400"]["content"]["application/json"]["examples"]
+        valores = [exemplo["value"] for exemplo in exemplos.values()]
+        self.assertTrue(valores)
+        self.assertIn("validation_error", [valor["code"] for valor in valores])
+        self.assertEqual(set(valores[0]), {"code", "detail", "errors"})
+
     def test_exemplo_de_409_traz_o_code_do_conflito(self) -> None:
         respostas = self._schema_json()["paths"]["/api/v1/consultas/"]["post"]["responses"]
 
