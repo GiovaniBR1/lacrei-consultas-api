@@ -111,6 +111,6 @@ Regra prática: nada de `AlterField` destrutivo ou `RemoveField` no mesmo deploy
 | Limitação | Onde resolve |
 | --- | --- |
 | Sem paginação: as listagens devolvem todos os registros (AD-018) | Fase 5, junto com o OpenAPI |
-| Permissão default `AllowAny`; os testes já autenticam para o flip não quebrar a suíte (AD-019) | Fase 3 (JWT + `IsAuthenticated`) |
+| ~~Permissão default `AllowAny`~~ — resolvido na Fase 3: default `IsAuthenticated`, todas as rotas acima exigem Bearer JWT (ver `docs/seguranca.md`) | Fase 3 ✔ |
 | Suíte local roda em SQLite; o índice parcial é suportado, mas o dialeto de produção é Postgres 16 (AD-017) | Fase 7 (CI em Postgres) |
 | `asaas_wallet_id` existe no modelo mas nenhum fluxo de pagamento o usa | Fase 6 |
