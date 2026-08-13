@@ -38,3 +38,13 @@ class EntregaAdrTests(SimpleTestCase):
         texto = (ADR / "0006-django-52-lts.md").read_text(encoding="utf-8")
         self.assertIn("5.2", texto)
         self.assertIn("LTS", texto)
+
+
+class EntregaDecisionLogTests(SimpleTestCase):
+    LOG = ROOT / "docs" / "decision-log.md"
+
+    def test_decision_log_tem_pelo_menos_cinco_datas(self) -> None:
+        self.assertTrue(self.LOG.is_file())
+        texto = self.LOG.read_text(encoding="utf-8")
+        datas = texto.count("2026-")
+        self.assertGreaterEqual(datas, 5)
