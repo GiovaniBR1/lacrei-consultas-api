@@ -44,3 +44,21 @@ class DeployRenderRunbookTests(SimpleTestCase):
     def test_nao_ha_blueprint_aplicavel_na_raiz(self) -> None:
         self.assertFalse((ROOT / "render.yaml").exists())
         self.assertFalse((ROOT / "render.yml").exists())
+
+
+class DeployRenderTradeoffTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = RUNBOOK.read_text(encoding="utf-8")
+
+    def test_postgres_compartilhado_entre_staging_e_producao(self) -> None:
+        self.assertIn("compartilham o mesmo Postgres free", self.texto)
+
+    def test_expiry_cerca_de_30_dias_e_upgrade(self) -> None:
+        self.assertIn("30 dias", self.texto)
+        self.assertIn("upgrade", self.texto)
+
+    def test_cold_start_apos_idle(self) -> None:
+        self.assertIn("15 min", self.texto)
+        self.assertIn("cold start", self.texto.lower())

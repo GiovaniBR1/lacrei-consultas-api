@@ -94,3 +94,11 @@ curl -sfS "https://<hostname-prod>/ready/"
 ```
 
 Esperado: HTTP 200. Não cole URL inventada no README. JWT não é exigido em `/ready/` (probe). Um smoke autenticado extra (`POST /api/v1/auth/token/` + listagem) é opcional e usa o usuário do `make seed` **somente em staging**.
+
+## 6. Trade-offs do free tier (honestos)
+
+Staging e produção **compartilham o mesmo Postgres free**. Não há isolamento de dados entre ambientes: um `make seed` em staging suja o mesmo banco que a API de produção usa. Isso cabe no desafio (~30 dias de avaliação) e não cabe em produto real.
+
+O plano Free do Postgres na Render **expira em cerca de 30 dias**. Caminho de upgrade: (1) migrar o mesmo serviço para um plano pago **antes** do expiry, ou (2) provisionar um segundo banco e apontar só produção para ele. O blueprint AWS (ADR-0002) isola RDS por ambiente e elimina esse atalho.
+
+Web Service free **hiberna depois de ~15 min idle** (cold start). A primeira request após o sono pode levar dezenas de segundos. O health check `/health/` não consulta o banco: a plataforma não deve marcar o serviço como morto só porque o Postgres ainda não respondeu. O smoke `/ready/` é que prova o DB; espere o wake-up.
