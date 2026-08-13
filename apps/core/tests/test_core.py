@@ -72,6 +72,34 @@ class RequestIdTests(APITestCase):
         self.assertEqual(record.request_id, rid)
 
 
+class AccessLogTests(APITestCase):
+    def test_uma_linha_por_request_com_campos_exigidos(self) -> None:
+        rid = "trace-do-log-1"
+
+        with self.assertLogs("apps.core.request", level="INFO") as capturado:
+            self.client.get("/health/", HTTP_X_REQUEST_ID=rid)
+
+        self.assertEqual(len(capturado.records), 1)
+        registro = capturado.records[0]
+        RequestIdFilter().filter(registro)
+        self.assertEqual(registro.request_id, rid)
+        mensagem = registro.getMessage()
+        self.assertIn("method=GET", mensagem)
+        self.assertIn("path=/health/", mensagem)
+        self.assertIn("status=200", mensagem)
+
+    def test_authorization_nao_aparece_no_log(self) -> None:
+        token = "token-super-secreto-nao-logar"
+
+        with self.assertLogs("apps.core.request", level="INFO") as capturado:
+            self.client.get("/api/v1/profissionais/", HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        saida = "\n".join(capturado.output)
+        self.assertNotIn(token, saida)
+        self.assertNotIn("Bearer", saida)
+        self.assertIn("status=401", saida)
+
+
 class ExceptionEnvelopeTests(APITestCase):
     def test_validation_error_envelope_shape(self) -> None:
         factory = APIRequestFactory()
