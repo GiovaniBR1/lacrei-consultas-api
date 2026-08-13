@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 class HealthView(APIView):
     authentication_classes: list = []
     permission_classes: list = []
+    throttle_classes: list = []
 
     def get(self, request: Request) -> Response:
         return Response({"status": "ok"}, status=status.HTTP_200_OK)
@@ -20,6 +21,7 @@ class HealthView(APIView):
 class ReadyView(APIView):
     authentication_classes: list = []
     permission_classes: list = []
+    throttle_classes: list = []
 
     def get(self, request: Request) -> Response:
         try:
