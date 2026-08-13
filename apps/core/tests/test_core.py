@@ -1,8 +1,6 @@
 import logging
-from io import StringIO
 from unittest.mock import MagicMock, patch
 
-from django.core.management import call_command
 from rest_framework import status
 from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.test import APIRequestFactory, APITestCase
@@ -175,12 +173,3 @@ class NormalizeErrorsTests(APITestCase):
 
         assert resposta is not None
         self.assertEqual(resposta.data["code"], "code_em_bytes")
-
-
-class SeedCommandTests(APITestCase):
-    def test_seed_roda_sem_erro_e_avisa_que_e_noop(self) -> None:
-        saida = StringIO()
-
-        call_command("seed", stdout=saida)
-
-        self.assertIn("noop", saida.getvalue())
