@@ -1,11 +1,13 @@
 import logging
+from io import StringIO
 from unittest.mock import MagicMock, patch
 
+from django.core.management import call_command
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.test import APIRequestFactory, APITestCase
 
-from apps.core.exceptions import ConsultaConflito, custom_exception_handler
+from apps.core.exceptions import ConsultaConflito, _normalize_errors, custom_exception_handler
 from apps.core.logging import RequestIdFilter, get_request_id
 
 
@@ -112,6 +114,37 @@ class ExceptionEnvelopeTests(APITestCase):
         self.assertIn("detail", response.data)
         self.assertIn("nome_social", response.data["errors"])
 
+    def test_excecao_fora_do_drf_nao_vira_envelope(self) -> None:
+        factory = APIRequestFactory()
+        request = factory.get("/health/")
+
+        resposta = custom_exception_handler(RuntimeError("boom"), {"request": request})
+
+        self.assertIsNone(resposta, "erro não-DRF deve virar 500 do Django, não 200 disfarçado")
+
+    def test_detail_em_lista_vira_non_field_errors(self) -> None:
+        factory = APIRequestFactory()
+        request = factory.post("/api/v1/consultas/")
+
+        resposta = custom_exception_handler(
+            ValidationError(["Horário indisponível."]), {"request": request}
+        )
+
+        assert resposta is not None
+        self.assertEqual(resposta.data["code"], "validation_error")
+        self.assertEqual(resposta.data["errors"]["non_field_errors"], ["Horário indisponível."])
+
+    def test_throttled_mantem_code_e_envelope(self) -> None:
+        factory = APIRequestFactory()
+        request = factory.post("/api/v1/auth/token/")
+
+        resposta = custom_exception_handler(Throttled(wait=30), {"request": request})
+
+        assert resposta is not None
+        self.assertEqual(resposta.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(resposta.data["code"], "throttled")
+        self.assertEqual(set(resposta.data), {"code", "detail", "errors"})
+
     def test_consulta_conflito_envelope_shape(self) -> None:
         factory = APIRequestFactory()
         request = factory.post("/api/v1/consultas/")
@@ -124,3 +157,30 @@ class ExceptionEnvelopeTests(APITestCase):
             "Já existe consulta agendada para este profissional neste horário.",
         )
         self.assertEqual(response.data["errors"], {})
+
+
+class NormalizeErrorsTests(APITestCase):
+    def test_detail_ausente_vira_dicionario_vazio(self) -> None:
+        self.assertEqual(_normalize_errors(None), {})
+
+    def test_detail_escalar_vira_non_field_errors(self) -> None:
+        self.assertEqual(_normalize_errors("Falhou."), {"non_field_errors": ["Falhou."]})
+
+    def test_code_em_bytes_e_decodificado(self) -> None:
+        exc = APIException("Falhou.")
+        exc.default_code = b"code_em_bytes"
+        factory = APIRequestFactory()
+
+        resposta = custom_exception_handler(exc, {"request": factory.get("/health/")})
+
+        assert resposta is not None
+        self.assertEqual(resposta.data["code"], "code_em_bytes")
+
+
+class SeedCommandTests(APITestCase):
+    def test_seed_roda_sem_erro_e_avisa_que_e_noop(self) -> None:
+        saida = StringIO()
+
+        call_command("seed", stdout=saida)
+
+        self.assertIn("noop", saida.getvalue())

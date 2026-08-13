@@ -46,6 +46,15 @@ class ConsultaSlotConstraintTests(TestCase):
             1,
         )
 
+    def test_str_traz_profissional_slot_e_status(self) -> None:
+        consulta = Consulta.objects.create(profissional=self.profissional, data_hora=self.slot)
+
+        texto = str(consulta)
+
+        self.assertIn(str(self.profissional.id), texto)
+        self.assertIn(self.slot.strftime("%Y-%m-%d %H:%M"), texto)
+        self.assertIn("agendada", texto)
+
     def test_mesmo_slot_para_outro_profissional_e_permitido(self) -> None:
         outro = Profissional.objects.create(
             nome_social="Dr. Bê",
