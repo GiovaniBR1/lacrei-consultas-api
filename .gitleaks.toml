@@ -1,0 +1,7 @@
+title = "consultas-api"
+
+[allowlist]
+description = "Placeholders versionados em .env.example (AD-027)"
+paths = [
+  '''\.env\.example$''',
+]

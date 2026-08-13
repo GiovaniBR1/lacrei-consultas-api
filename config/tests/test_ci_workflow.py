@@ -1,10 +1,15 @@
 """Contrato do workflow GitHub Actions — derivado dos ACs da Fase 7, não do YAML."""
 
+import subprocess
 from pathlib import Path
 
 from django.test import SimpleTestCase
 
-WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "ci.yml"
+ROOT = Path(__file__).resolve().parents[2]
+WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+GITLEAKS = ROOT / ".gitleaks.toml"
+GITIGNORE = ROOT / ".gitignore"
+
 
 
 class CiWorkflowLintTests(SimpleTestCase):
@@ -41,3 +46,46 @@ class CiWorkflowPostgresTests(SimpleTestCase):
         self.assertIn("DATABASE_URL:", self.texto)
         self.assertIn("postgres://", self.texto)
         self.assertIn("manage.py test", self.texto)
+
+
+class CiWorkflowSecurityTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = WORKFLOW.read_text(encoding="utf-8")
+        cls.allowlist = GITLEAKS.read_text(encoding="utf-8")
+
+    def test_check_deploy_com_production_e_env_dummy(self) -> None:
+        self.assertIn("check --deploy", self.texto)
+        self.assertIn("config.settings.production", self.texto)
+        self.assertIn("SECRET_KEY: check-deploy-dummy-", self.texto)
+        self.assertIn("ALLOWED_HOSTS: example.com", self.texto)
+
+    def test_gitleaks_detect_com_redact(self) -> None:
+        self.assertIn("gitleaks detect", self.texto)
+        self.assertIn("--redact", self.texto)
+        self.assertIn("--config .gitleaks.toml", self.texto)
+
+    def test_allowlist_gitleaks_so_env_example(self) -> None:
+        self.assertTrue(GITLEAKS.is_file())
+        self.assertIn(r"\.env\.example$", self.allowlist)
+        self.assertNotIn(r"\.env$", self.allowlist.replace(r"\.env\.example$", ""))
+
+    def test_pip_audit_falha_em_advisory(self) -> None:
+        self.assertIn("pip-audit", self.texto)
+
+    def test_workflow_nao_imprime_secrets(self) -> None:
+        self.assertNotRegex(self.texto, r"echo\s+.*\$\{\{\s*secrets\.")
+        self.assertNotIn("echo $RENDER_DEPLOY_HOOK", self.texto)
+
+    def test_env_ignorado_e_nao_versionado(self) -> None:
+        gitignore = GITIGNORE.read_text(encoding="utf-8")
+        self.assertRegex(gitignore, r"(?m)^\.env$")
+        listados = subprocess.run(
+            ["git", "ls-files", ".env"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertEqual(listados.stdout.strip(), "")
