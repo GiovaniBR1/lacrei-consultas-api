@@ -1,13 +1,14 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from apps.consultas.models import Consulta
-from apps.payments.models import Cobranca, WebhookEvent
-from apps.profissionais.models import Profissional
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 from django.utils import timezone
+
+from apps.consultas.models import Consulta
+from apps.payments.models import Cobranca, WebhookEvent
+from apps.profissionais.models import Profissional
 
 
 class CobrancaModelTests(TestCase):

@@ -138,6 +138,11 @@ SIMPLE_JWT = {
 
 SPECTACULAR_ENABLED = env.bool("SPECTACULAR_ENABLED", default=True)
 
+ASAAS_MODE = env("ASAAS_MODE", default="mock")
+ASAAS_API_KEY = env("ASAAS_API_KEY", default="")
+ASAAS_WEBHOOK_TOKEN = env("ASAAS_WEBHOOK_TOKEN", default="")
+ASAAS_WALLET_PLATFORM = env("ASAAS_WALLET_PLATFORM", default="wlt_platform_mock")
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Consultas API — Lacrei Saúde",
     "DESCRIPTION": (
