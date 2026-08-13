@@ -17,10 +17,11 @@ class TaxasConfiguradasTests(SimpleTestCase):
     def test_settings_definem_user_anon_e_auth_token(self) -> None:
         taxas = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
 
-        self.assertEqual(set(taxas), {"user", "anon", "auth_token"})
+        self.assertEqual(set(taxas), {"user", "anon", "auth_token", "asaas_webhook"})
         self.assertEqual(taxas["auth_token"], "5/min")
         self.assertEqual(taxas["user"], "120/min")
         self.assertEqual(taxas["anon"], "20/min")
+        self.assertEqual(taxas["asaas_webhook"], "60/min")
 
 
 class ThrottleTokenTests(APITestCase):

@@ -1,23 +1,34 @@
-"""HTTP de cobrança e (depois) webhook. JWT nas cobranças; webhook é público."""
+"""HTTP de cobrança (JWT) e webhook Asaas (token próprio, sem JWT)."""
 
 from __future__ import annotations
 
+import hmac
+import logging
 from uuid import UUID
 
+from django.conf import settings
 from django.shortcuts import get_object_or_404
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.consultas.models import Consulta
-from apps.core.schema import ERROS_ESCRITA, RESPOSTA_404
-from apps.payments.exceptions import IdempotencyKeyRequired, SplitWalletEmissor
+from apps.core.schema import ERROS_ESCRITA, RESPOSTA_401, RESPOSTA_404
+from apps.payments.exceptions import (
+    IdempotencyKeyRequired,
+    SplitWalletEmissor,
+    WebhookTokenInvalido,
+)
 from apps.payments.gateway import EmitterWalletError, SplitInvalido
 from apps.payments.serializers import CobrancaCreateSerializer, CobrancaSerializer
-from apps.payments.services import criar_cobranca
+from apps.payments.services import aplicar_evento, criar_cobranca, registrar_webhook
+
+logger = logging.getLogger("apps.payments.webhook")
 
 
 @extend_schema(
@@ -55,3 +66,32 @@ class CobrancaCreateView(APIView):
 
         corpo = CobrancaSerializer(cobranca).data
         return Response(corpo, status=status.HTTP_201_CREATED if criada else status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiTypes.OBJECT, 401: RESPOSTA_401},
+)
+class WebhookAsaasView(APIView):
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = "asaas_webhook"
+
+    def post(self, request: Request) -> Response:
+        esperado = str(getattr(settings, "ASAAS_WEBHOOK_TOKEN", "") or "")
+        recebido = request.headers.get("asaas-access-token") or ""
+        if not esperado or not hmac.compare_digest(esperado, recebido):
+            raise WebhookTokenInvalido()
+
+        event_id = str(request.data.get("id") or "")
+        tipo = str(request.data.get("event") or "")
+        payment = request.data.get("payment")
+        payment_id = str(payment.get("id") or "") if isinstance(payment, dict) else ""
+
+        logger.info("tipo=%s event_id=%s payment_id=%s", tipo, event_id, payment_id)
+
+        if event_id and registrar_webhook(event_id, tipo, payment_id):
+            aplicar_evento(tipo, payment_id)
+
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)

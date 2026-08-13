@@ -16,6 +16,12 @@ class SplitWalletEmissor(APIException):
     default_code = "split_wallet_emissor"
 
 
+class WebhookTokenInvalido(APIException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    default_detail = "Token de webhook inválido ou ausente."
+    default_code = "not_authenticated"
+
+
 class ProfissionalComCobranca(APIException):
     status_code = status.HTTP_409_CONFLICT
     default_detail = "Não é possível excluir profissional com cobrança vinculada."

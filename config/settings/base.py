@@ -125,6 +125,7 @@ REST_FRAMEWORK = {
         "user": "120/min",
         "anon": "20/min",
         "auth_token": "5/min",
+        "asaas_webhook": "60/min",
     },
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
 }

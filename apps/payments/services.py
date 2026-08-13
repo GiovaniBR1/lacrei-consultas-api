@@ -8,7 +8,7 @@ from django.db import IntegrityError, transaction
 
 from apps.consultas.models import Consulta
 from apps.payments.gateway import SplitItem, get_gateway
-from apps.payments.models import Cobranca
+from apps.payments.models import Cobranca, WebhookEvent
 
 PERCENTUAL_DEFAULT = Decimal("80.00")
 
@@ -67,3 +67,48 @@ def criar_cobranca(
             return existente, False
         raise
     return cobranca, True
+
+
+_ORDEM_STATUS = {
+    Cobranca.Status.PENDENTE: 0,
+    Cobranca.Status.CONFIRMADA: 1,
+    Cobranca.Status.RECEBIDA: 2,
+}
+
+
+def registrar_webhook(asaas_event_id: str, tipo: str, asaas_payment_id: str) -> bool:
+    try:
+        with transaction.atomic():
+            WebhookEvent.objects.create(
+                asaas_event_id=asaas_event_id,
+                tipo=tipo,
+                asaas_payment_id=asaas_payment_id,
+            )
+    except IntegrityError:
+        return False
+    return True
+
+
+def aplicar_evento(tipo: str, asaas_payment_id: str) -> None:
+    if not asaas_payment_id:
+        return
+    cobranca = Cobranca.objects.filter(asaas_payment_id=asaas_payment_id).first()
+    if cobranca is None:
+        return
+
+    if tipo == "PAYMENT_CONFIRMED":
+        _promover(cobranca, Cobranca.Status.CONFIRMADA)
+    elif tipo == "PAYMENT_RECEIVED":
+        _promover(cobranca, Cobranca.Status.RECEBIDA)
+        cobranca.split_status = Cobranca.SplitStatus.CONCLUIDO
+
+    cobranca.save(update_fields=["status", "split_status", "atualizado_em"])
+
+
+def _promover(cobranca: Cobranca, destino: str) -> None:
+    atual = _ORDEM_STATUS.get(cobranca.status)
+    novo = _ORDEM_STATUS.get(destino)
+    if atual is None or novo is None:
+        return
+    if novo > atual:
+        cobranca.status = destino
