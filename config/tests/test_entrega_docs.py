@@ -48,3 +48,25 @@ class EntregaDecisionLogTests(SimpleTestCase):
         texto = self.LOG.read_text(encoding="utf-8")
         datas = texto.count("2026-")
         self.assertGreaterEqual(datas, 5)
+
+
+class EntregaChecklistDiagramasTests(SimpleTestCase):
+    SEC = ROOT / "docs" / "seguranca.md"
+    ARQ = ROOT / "docs" / "arquitetura.md"
+
+    def test_checklist_mistura_feito_e_nao_feito(self) -> None:
+        texto = self.SEC.read_text(encoding="utf-8")
+        self.assertIn("✅", texto)
+        self.assertIn("❌", texto)
+
+    def test_checklist_cita_postgres_compartilhado(self) -> None:
+        texto = self.SEC.read_text(encoding="utf-8")
+        self.assertIn("Postgres", texto)
+        self.assertIn("compartilhado", texto.lower())
+
+    def test_arquitetura_tem_dois_mermaid(self) -> None:
+        texto = self.ARQ.read_text(encoding="utf-8")
+        self.assertGreaterEqual(texto.count("```mermaid"), 2)
+        self.assertIn("split", texto.lower())
+        self.assertIn("webhook", texto.lower())
+        self.assertIn("ruff", texto.lower())

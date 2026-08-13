@@ -136,3 +136,25 @@ Não há soft-delete nem lixeira: exclusão é definitiva, o que atende ao direi
 | Sem RBAC/multi-tenant (AD-006) | Non-goal declarado |
 | ~~Bloqueio de exclusão com cobrança~~ — 409 `profissional_com_cobranca` / `consulta_com_cobranca` (AD-026) | Fase 6 ✔ |
 | Suíte roda em SQLite no host local (AD-017) | Fase 7 (CI em Postgres 16) |
+
+## Checklist de segurança (honesta)
+
+Itens desta entrega, não um ASVS completo. ❌ não é esquecimento: é limite consciente.
+
+| Controle | Status | Nota |
+| --- | --- | --- |
+| JWT + refresh com rotação/blacklist | ✅ | AD-006, ADR-0003 |
+| Serializers explícitos (sem `__all__` em write) | ✅ | |
+| Secrets só em env; `.env` gitignored | ✅ | `.env.example` sem segredos |
+| `check --deploy` sem waivers | ✅ | CI job security |
+| Logs sem PII/tokens + `X-Request-ID` | ✅ | |
+| Minimização: só `nome_social`, sem CPF/orientação | ✅ | AD-010 |
+| Webhook `compare_digest` + idempotência | ✅ | |
+| CORS allowlist fora do local | ✅ | |
+| Isolamento de dados staging vs produção | ❌ | Um Postgres free compartilhado (AD-002); ~30 dias |
+| Multi-tenant / RBAC fino | ❌ | Non-goal (AD-006) |
+| Redis para throttle compartilhado | ❌ | LocMemCache por processo (AD-022) |
+| Soft-delete / lixeira | ❌ | Hard-delete (ADR-0005) |
+| URLs Render com `/ready/` 200 | ❌ | Bloqueado AD-003 |
+| Sentry | ❌ | Opcional; DSN ausente = pular |
+
