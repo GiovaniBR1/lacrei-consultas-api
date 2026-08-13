@@ -103,3 +103,23 @@ class CiWorkflowBuildTests(SimpleTestCase):
 
     def test_docker_build_com_tag_sha(self) -> None:
         self.assertIn("docker build -t consultas-api:${{ github.sha }} .", self.texto)
+
+
+class CiWorkflowDeployTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = WORKFLOW.read_text(encoding="utf-8")
+
+    def test_deploy_so_no_workflow_dispatch(self) -> None:
+        self.assertIn("deploy:", self.texto)
+        self.assertIn("if: github.event_name == 'workflow_dispatch'", self.texto)
+
+    def test_deploy_skip_quando_hook_ausente(self) -> None:
+        self.assertIn('RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}', self.texto)
+        self.assertIn('if [ -z "$RENDER_DEPLOY_HOOK" ]', self.texto)
+        self.assertIn("exit 0", self.texto)
+
+    def test_sem_smoke_ready_remoto(self) -> None:
+        self.assertNotIn("/ready/", self.texto)
+        self.assertNotIn("onrender.com", self.texto)
