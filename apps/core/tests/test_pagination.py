@@ -50,12 +50,6 @@ class PaginacaoTests(APITestCase):
 
         self.assertEqual(len(corpo["results"]), 5)
 
-    def test_page_size_acima_do_teto_e_limitado(self) -> None:
-        corpo = self.client.get(URL_LISTA, {"page_size": 5000}).json()
-
-        self.assertLessEqual(len(corpo["results"]), 100)
-        self.assertEqual(len(corpo["results"]), TOTAL)
-
     def test_pagina_fora_do_intervalo_devolve_404_com_envelope(self) -> None:
         response = self.client.get(URL_LISTA, {"page": 99})
 
@@ -68,3 +62,30 @@ class PaginacaoTests(APITestCase):
         corpo = self.client.get("/api/v1/consultas/").json()
 
         self.assertEqual(set(corpo), {"count", "next", "previous", "results"})
+
+
+class TetoDePaginaTests(APITestCase):
+    """Precisa de mais registros que o teto, senão o teste não distingue teto de 'tudo'."""
+
+    ACIMA_DO_TETO = 105
+
+    def setUp(self) -> None:
+        self.client.force_authenticate(
+            user=get_user_model().objects.create_user(username="operadora", password="senha")
+        )
+        Profissional.objects.bulk_create(
+            Profissional(
+                nome_social=f"Profissional {indice:03d}",
+                profissao="Psicóloga",
+                endereco="Rua das Flores, 100 - São Paulo/SP",
+                contato=f"p{indice}@example.com",
+            )
+            for indice in range(self.ACIMA_DO_TETO)
+        )
+
+    def test_page_size_acima_do_teto_e_limitado_a_cem(self) -> None:
+        corpo = self.client.get(URL_LISTA, {"page_size": 5000}).json()
+
+        self.assertEqual(corpo["count"], self.ACIMA_DO_TETO)
+        self.assertEqual(len(corpo["results"]), 100)
+        self.assertIsNotNone(corpo["next"])
