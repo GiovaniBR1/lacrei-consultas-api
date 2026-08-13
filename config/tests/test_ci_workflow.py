@@ -25,3 +25,19 @@ class CiWorkflowLintTests(SimpleTestCase):
         self.assertIn("lint:", self.texto)
         self.assertIn("ruff check .", self.texto)
         self.assertIn("ruff format --check .", self.texto)
+
+
+class CiWorkflowPostgresTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = WORKFLOW.read_text(encoding="utf-8")
+
+    def test_service_container_e_postgres_16(self) -> None:
+        self.assertRegex(self.texto, r"image:\s*postgres:16")
+
+    def test_job_test_usa_database_url_e_suite_django(self) -> None:
+        self.assertIn("test:", self.texto)
+        self.assertIn("DATABASE_URL:", self.texto)
+        self.assertIn("postgres://", self.texto)
+        self.assertIn("manage.py test", self.texto)

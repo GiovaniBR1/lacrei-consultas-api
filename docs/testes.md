@@ -31,7 +31,7 @@ A base é larga em unidade, mas o **contrato** — status code e envelope — é
 | TEST-02 CRUD e busca de consultas | `apps/consultas/tests/test_api.py` + `test_filters.py` (filtro por profissional, status, janela de data, ordering) |
 | TEST-03 400 / 401 / 404 | `test_api.py::test_create_sem_campo_obrigatorio_retorna_400_com_envelope`, `apps/accounts/tests/test_auth.py::PermissaoDefaultTests`, `test_api.py::test_retrieve_de_id_inexistente_retorna_404_com_envelope` |
 | TEST-04 409 double booking | `apps/consultas/tests/test_api.py` (HTTP) + `test_models.py` (constraint) + `test_views.py` (o `IntegrityError` que **não** é conflito sobe intacto) |
-| TEST-05 Postgres | ⏳ Pendente — ver abaixo |
+| TEST-05 Postgres | ✅ Job `test` do GHA com service `postgres:16` (host local continua SQLite, AD-017) |
 | TEST-06 Cobertura ≥ 75% | `make test-cov` → 99% real, gate em 75% |
 
 ## Cobertura
@@ -44,14 +44,14 @@ O piso é 75% (número da spec), com folga grande sobre os 99% atuais. A folga �
 
 **Cobertura não é garantia.** A prova de que a suíte discrimina defeito vem do sensor do Verifier, que injeta falhas reais (reabrir permissão, desligar blacklist, vazar `Authorization` no log, acrescentar `cpf` ao modelo) e confirma que a suíte fica vermelha. Está registrado nos `validation.md` de cada fase.
 
-## Pendência honesta: Postgres
+## TEST-05: Postgres no CI
 
-A suíte roda em **SQLite** no host de desenvolvimento porque não há Docker disponível nesta máquina (AD-017). Isso é uma limitação real, não um detalhe:
+A suíte local continua em **SQLite** (AD-017). O quality gate real usa Postgres 16:
 
-- O que **está** coberto: o SQLite honra `UniqueConstraint(condition=...)`, então a regra anti–double booking — o ponto de maior risco do domínio — é verificada de verdade, e não apenas simulada.
-- O que **não** está: diferenças de dialeto (tipos, mensagens de erro, comportamento de transação sob concorrência real).
+- Host: `make test` sem `DATABASE_URL` → SQLite. A unique parcial de agenda continua sendo honrada.
+- CI: job `test` em `.github/workflows/ci.yml` sobe `postgres:16` e exporta `DATABASE_URL`. É aí que o dialeto (tipos, transação) entra.
 
-O comando de teste já respeita `DATABASE_URL`; apontar para Postgres é questão de exportar a variável. O job com serviço Postgres 16 entra no CI da **Fase 7** — é lá que TEST-05 fecha.
+O comando de teste já respeita `DATABASE_URL`; no GitHub Actions a variável aponta para o service container.
 
 ## Convenções
 
