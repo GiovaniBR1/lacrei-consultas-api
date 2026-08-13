@@ -42,9 +42,9 @@ class ProfissionalApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         corpo = response.json()
-        self.assertEqual(len(corpo), 1)
-        self.assertNotIn("contato", corpo[0])
-        self.assertEqual(corpo[0]["nome_social"], "Dra. Ana")
+        self.assertEqual(corpo["count"], 1)
+        self.assertNotIn("contato", corpo["results"][0])
+        self.assertEqual(corpo["results"][0]["nome_social"], "Dra. Ana")
 
     def test_retrieve_inclui_contato(self) -> None:
         profissional = Profissional.objects.create(**PAYLOAD_VALIDO)

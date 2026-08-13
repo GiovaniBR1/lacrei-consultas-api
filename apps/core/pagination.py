@@ -1,0 +1,9 @@
+"""Paginação padrão da API: teto de resposta em toda listagem."""
+
+from rest_framework.pagination import PageNumberPagination
+
+
+class PaginacaoPadrao(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100

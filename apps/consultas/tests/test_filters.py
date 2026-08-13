@@ -12,6 +12,11 @@ from apps.profissionais.models import Profissional
 URL_LISTA = "/api/v1/consultas/"
 
 
+def resultados(response) -> list[dict]:
+    """Listagens são paginadas: o array vive em `results`."""
+    return response.json()["results"]
+
+
 class ConsultaFiltroTests(APITestCase):
     def setUp(self) -> None:
         self.user = get_user_model().objects.create_user(
@@ -43,14 +48,15 @@ class ConsultaFiltroTests(APITestCase):
         response = self.client.get(URL_LISTA, {"profissional": str(self.ana.id)})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        ids = {item["id"] for item in response.json()}
+        ids = {item["id"] for item in resultados(response)}
         self.assertEqual(ids, {str(self.consulta_amanha.id), str(self.consulta_semana.id)})
 
     def test_filtro_por_profissional_inexistente_devolve_lista_vazia(self) -> None:
         response = self.client.get(URL_LISTA, {"profissional": str(uuid.uuid4())})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json(), [])
+        self.assertEqual(resultados(response), [])
+        self.assertEqual(response.json()["count"], 0)
 
     def test_filtro_por_profissional_malformado_devolve_400(self) -> None:
         response = self.client.get(URL_LISTA, {"profissional": "nao-e-uuid"})
@@ -62,8 +68,9 @@ class ConsultaFiltroTests(APITestCase):
         response = self.client.get(URL_LISTA, {"status": "cancelada"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        corpo = response.json()
-        self.assertEqual([item["id"] for item in corpo], [str(self.consulta_semana.id)])
+        self.assertEqual(
+            [item["id"] for item in resultados(response)], [str(self.consulta_semana.id)]
+        )
 
     def test_faixa_de_data_hora_recorta_o_resultado(self) -> None:
         corte_inicio = (self.amanha + timedelta(hours=1)).isoformat()
@@ -71,7 +78,9 @@ class ConsultaFiltroTests(APITestCase):
         response = self.client.get(URL_LISTA, {"data_hora_after": corte_inicio})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual([item["id"] for item in response.json()], [str(self.consulta_semana.id)])
+        self.assertEqual(
+            [item["id"] for item in resultados(response)], [str(self.consulta_semana.id)]
+        )
 
     def test_faixa_com_before_exclui_o_futuro_distante(self) -> None:
         corte_fim = (self.amanha + timedelta(hours=1)).isoformat()
@@ -79,7 +88,7 @@ class ConsultaFiltroTests(APITestCase):
         response = self.client.get(URL_LISTA, {"data_hora_before": corte_fim})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        ids = {item["id"] for item in response.json()}
+        ids = {item["id"] for item in resultados(response)}
         self.assertEqual(ids, {str(self.consulta_amanha.id), str(self.consulta_be.id)})
 
     def test_ordering_crescente_por_data_hora(self) -> None:
@@ -88,7 +97,7 @@ class ConsultaFiltroTests(APITestCase):
         )
 
         self.assertEqual(
-            [item["id"] for item in response.json()],
+            [item["id"] for item in resultados(response)],
             [str(self.consulta_amanha.id), str(self.consulta_semana.id)],
         )
 
@@ -98,6 +107,6 @@ class ConsultaFiltroTests(APITestCase):
         )
 
         self.assertEqual(
-            [item["id"] for item in response.json()],
+            [item["id"] for item in resultados(response)],
             [str(self.consulta_semana.id), str(self.consulta_amanha.id)],
         )
