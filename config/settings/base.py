@@ -136,10 +136,19 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
+SPECTACULAR_ENABLED = env.bool("SPECTACULAR_ENABLED", default=True)
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Consultas API — Lacrei Saúde",
-    "DESCRIPTION": "API de gerenciamento de consultas médicas (desafio Tech Lead).",
+    "DESCRIPTION": (
+        "API de gerenciamento de consultas médicas (desafio Tech Lead).\n\n"
+        "Autenticação: obtenha o par de tokens em `POST /api/v1/auth/token/` e envie "
+        "`Authorization: Bearer <access>` nas demais rotas. Listagens são paginadas "
+        "(`page`, `page_size`). Erros seguem o envelope `{code, detail, errors}`."
+    ),
     "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": "/api/v1",
 }
 
 LOGGING = {

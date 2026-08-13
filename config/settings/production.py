@@ -4,6 +4,8 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 CORS_ALLOW_ALL_ORIGINS = False
+# Inventário de API é superfície: em produção o schema fica fora do ar por padrão (AD-025).
+SPECTACULAR_ENABLED = env.bool("SPECTACULAR_ENABLED", default=False)  # noqa: F405
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 SECURE_SSL_REDIRECT = True
