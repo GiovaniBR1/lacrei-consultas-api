@@ -70,3 +70,32 @@ class EntregaChecklistDiagramasTests(SimpleTestCase):
         self.assertIn("split", texto.lower())
         self.assertIn("webhook", texto.lower())
         self.assertIn("ruff", texto.lower())
+
+
+class EntregaTechLeadTests(SimpleTestCase):
+    DOC = ROOT / "docs" / "entrega-tech-lead.md"
+    README = ROOT / "README.md"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.texto = cls.DOC.read_text(encoding="utf-8")
+        cls.readme = cls.README.read_text(encoding="utf-8")
+
+    def test_seis_perguntas_do_template(self) -> None:
+        for n in range(1, 7):
+            with self.subTest(n=n):
+                self.assertIn(f"## {n}.", self.texto)
+        self.assertIn("LGBTQIAPN+", self.texto)
+        self.assertIn("missão", self.texto.lower())
+
+    def test_rascunho_nao_enviar_urls_pendentes(self) -> None:
+        self.assertIn("não enviar", self.texto.lower())
+        self.assertIn("pendente (AD-003)", self.texto)
+        self.assertIn("desenvolvimento.humano@lacreisaude.com.br", self.texto)
+        self.assertNotRegex(self.texto, r"https://[a-z0-9-]+\.onrender\.com")
+
+    def test_readme_liga_entrega_decision_log_e_arquitetura(self) -> None:
+        self.assertIn("docs/entrega-tech-lead.md", self.readme)
+        self.assertIn("docs/decision-log.md", self.readme)
+        self.assertIn("docs/arquitetura.md", self.readme)
