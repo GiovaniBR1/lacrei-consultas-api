@@ -1,4 +1,4 @@
-.PHONY: up down test lint migrate seed check-deploy
+.PHONY: up down test test-cov lint migrate seed check-deploy
 
 PYTHON ?= .venv/Scripts/python.exe
 RUFF ?= .venv/Scripts/ruff.exe
@@ -11,6 +11,10 @@ down:
 
 test:
 	$(PYTHON) manage.py test --settings=config.settings.local
+
+test-cov:
+	$(PYTHON) -m coverage run manage.py test --settings=config.settings.local
+	$(PYTHON) -m coverage report
 
 lint:
 	$(RUFF) check .
