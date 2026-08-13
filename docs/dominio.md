@@ -1,12 +1,13 @@
-# Domínio: profissionais e consultas
+# Domínio: profissionais, consultas e cobranças
 
-Contrato da Fase 2 da API. Base para o OpenAPI da Fase 5.
+Contrato da API após a Fase 6. OpenAPI em `/api/schema/` (local/staging).
 
 ## Modelo
 
 ```mermaid
 erDiagram
   PROFISSIONAL ||--o{ CONSULTA : realiza
+  CONSULTA ||--o{ COBRANCA : gera
 
   PROFISSIONAL {
     uuid id PK
@@ -14,7 +15,7 @@ erDiagram
     string profissao
     string endereco
     string contato
-    string asaas_wallet_id "opcional"
+    string asaas_wallet_id "opcional, fora da listagem"
     datetime criado_em
     datetime atualizado_em
   }
@@ -27,11 +28,31 @@ erDiagram
     datetime criado_em
     datetime atualizado_em
   }
+
+  COBRANCA {
+    uuid id PK
+    uuid consulta_id FK "PROTECT"
+    decimal valor
+    string status "pendente|confirmada|recebida|cancelada|..."
+    string split_status
+    string asaas_payment_id UK
+    string idempotency_key UK
+    decimal percentual_profissional
+    decimal net_value
+    bool split_ativo
+  }
+
+  WEBHOOK_EVENT {
+    uuid id PK
+    string asaas_event_id UK
+    string tipo
+    string asaas_payment_id
+  }
 ```
 
 `Profissional` guarda apenas nome de tratamento. Nome civil, CPF, orientação sexual e identidade de gênero não existem no schema nem são aceitos no payload: o serializer declara campos explícitos, então qualquer chave extra é descartada.
 
-Excluir um profissional apaga as consultas dele em cascata. A trava financeira entra na Fase 6: `Cobranca` aponta para `Consulta` com `PROTECT`, e aí a exclusão passa a falhar quando existe cobrança confirmada ou recebida.
+`Cobranca.consulta` usa `on_delete=PROTECT` para **qualquer** status (AD-026). Excluir consulta ou profissional com cobrança vinculada devolve **409** (`consulta_com_cobranca` / `profissional_com_cobranca`). Sem cobrança, excluir profissional ainda cascateia as consultas (AD-015). `WebhookEvent` não persiste o body do Asaas.
 
 ## Endpoints
 
@@ -41,14 +62,20 @@ Excluir um profissional apaga as consultas dele em cascata. A trava financeira e
 | GET | `/api/v1/profissionais/` | 200 (sem `contato`) | — |
 | GET | `/api/v1/profissionais/{id}/` | 200 (com `contato`) | 404 `not_found` |
 | PUT/PATCH | `/api/v1/profissionais/{id}/` | 200 | 400 `validation_error`, 404 `not_found` |
-| DELETE | `/api/v1/profissionais/{id}/` | 204 | 404 `not_found` |
+| DELETE | `/api/v1/profissionais/{id}/` | 204 | 404 `not_found`, **409 `profissional_com_cobranca`** |
 | POST | `/api/v1/consultas/` | 201 | 400 `validation_error`, **409 `consulta_conflito`** |
 | GET | `/api/v1/consultas/` | 200 | 400 `validation_error` (filtro malformado) |
 | GET | `/api/v1/consultas/{id}/` | 200 | 404 `not_found` |
 | PUT/PATCH | `/api/v1/consultas/{id}/` | 200 | 400 `validation_error`, 409 `consulta_conflito`, 404 `not_found` |
-| DELETE | `/api/v1/consultas/{id}/` | 204 | 404 `not_found` |
+| DELETE | `/api/v1/consultas/{id}/` | 204 | 404 `not_found`, **409 `consulta_com_cobranca`** |
+| POST | `/api/v1/consultas/{id}/cobrancas/` | 201 (cria) / 200 (replay da key) | 400 `idempotency_key_required` / `split_wallet_emissor`, 401, 404 `not_found` |
+| POST | `/webhooks/asaas/` | 200 | 401 `not_authenticated` |
 
-`contato` sai da listagem por minimização de dado pessoal e volta no detalhe.
+`contato` e `asaas_wallet_id` saem da listagem. O webhook não exige JWT: autentica pelo header `asaas-access-token`.
+
+Criar cobrança exige `Idempotency-Key`. Sem o header: 400. Replay da mesma key: 200, mesmo `asaas_payment_id`, uma só linha. Body: `{valor, split?}` com `split` no formato OpenAPI (`walletId`, `percentualValue`). Sem `split`, o mock usa a wallet do profissional a 80%.
+
+Máquina: `PAYMENT_CONFIRMED` → `confirmada` (não implica fundo disponível); `PAYMENT_RECEIVED` → `recebida` + split `concluido`. Pix pode pular CONFIRMED. CONFIRMED tardio não regride. Detalhe e ADR: [`docs/adr/0001-asaas-mock-first.md`](adr/0001-asaas-mock-first.md).
 
 ### Paginação
 
@@ -131,4 +158,4 @@ Regra prática: nada de `AlterField` destrutivo ou `RemoveField` no mesmo deploy
 | ~~Sem paginação~~ — resolvido na Fase 5: listagens paginadas com teto de 100 (AD-018 fechado) | Fase 5 ✔ |
 | ~~Permissão default `AllowAny`~~ — resolvido na Fase 3: default `IsAuthenticated`, todas as rotas acima exigem Bearer JWT (ver `docs/seguranca.md`) | Fase 3 ✔ |
 | Suíte local roda em SQLite; o índice parcial é suportado, mas o dialeto de produção é Postgres 16 (AD-017) | Fase 7 (CI em Postgres) |
-| `asaas_wallet_id` existe no modelo mas nenhum fluxo de pagamento o usa | Fase 6 |
+| ~~`asaas_wallet_id` existe no modelo mas nenhum fluxo de pagamento o usa~~ — resolvido na Fase 6 (split default e seed) | Fase 6 ✔ |

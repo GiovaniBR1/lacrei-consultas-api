@@ -10,6 +10,7 @@ from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
 from apps.consultas.models import Consulta
+from apps.payments.models import Cobranca
 from apps.profissionais.models import Profissional
 
 
@@ -26,6 +27,7 @@ class SeedTests(TestCase):
         self.assertEqual(get_user_model().objects.count(), 1)
         self.assertEqual(Profissional.objects.count(), 2)
         self.assertEqual(Consulta.objects.count(), 3)
+        self.assertEqual(Cobranca.objects.count(), 1)
         self.assertIn("operadora", saida)
 
     def test_profissionais_usam_nome_social(self) -> None:
@@ -49,6 +51,17 @@ class SeedTests(TestCase):
         self.assertEqual(get_user_model().objects.count(), 1)
         self.assertEqual(Profissional.objects.count(), 2)
         self.assertEqual(Consulta.objects.count(), 3)
+        self.assertEqual(Cobranca.objects.count(), 1)
+
+    def test_cobranca_pendente_na_consulta_agendada(self) -> None:
+        self._rodar()
+
+        cobranca = Cobranca.objects.get()
+        self.assertEqual(cobranca.status, Cobranca.Status.PENDENTE)
+        self.assertEqual(cobranca.consulta.status, Consulta.Status.AGENDADA)
+        self.assertEqual(cobranca.idempotency_key, "seed-cobranca-agendada")
+        wallets = set(Profissional.objects.values_list("asaas_wallet_id", flat=True))
+        self.assertEqual(wallets, {"wlt_seed_ana", "wlt_seed_be"})
 
     def test_usuario_criado_consegue_autenticar_com_a_senha_informada(self) -> None:
         self._rodar()

@@ -9,7 +9,7 @@ Django 5.2 LTS · DRF · SimpleJWT · PostgreSQL 16 · Poetry · Docker · GitHu
 ```bash
 cp .env.example .env
 make migrate          # cria o schema
-make seed             # usuário operacional + 2 profissionais + 3 consultas
+make seed             # usuário + 2 profissionais + 3 consultas + 1 cobrança PENDENTE
 poetry run python manage.py runserver
 ```
 
@@ -44,6 +44,8 @@ make seed
 | `POST /api/v1/auth/token/` · `/refresh/` | Emite e renova o par de tokens JWT |
 | `/api/v1/profissionais/` | CRUD de profissionais (nome social, profissão, endereço, contato) |
 | `/api/v1/consultas/` | CRUD de consultas, busca por profissional, status e janela de data |
+| `POST /api/v1/consultas/{id}/cobrancas/` | Cria cobrança mock (JWT + `Idempotency-Key`) |
+| `POST /webhooks/asaas/` | Webhook Asaas (`asaas-access-token`, sem JWT) |
 | `GET /health/` · `GET /ready/` | Liveness e readiness (abertas, para as probes da plataforma) |
 | `GET /api/docs/` · `/api/schema/` | Swagger UI e OpenAPI 3 (desligáveis em produção) |
 
@@ -72,8 +74,9 @@ Regra de agenda: dois agendamentos no mesmo horário para o mesmo profissional c
 
 | Documento | Conteúdo |
 | --- | --- |
-| [`docs/dominio.md`](docs/dominio.md) | Modelo, endpoints, anti–double booking, timezone, política de migrations |
+| [`docs/dominio.md`](docs/dominio.md) | Modelo, endpoints, anti–double booking, cobrança/webhook, timezone, política de migrations |
 | [`docs/seguranca.md`](docs/seguranca.md) | JWT, throttle, CORS, logs sem PII, privacidade, mapa OWASP API Top 10 |
+| [`docs/adr/0001-asaas-mock-first.md`](docs/adr/0001-asaas-mock-first.md) | Asaas mock-first, split `percentualValue`, webhook idempotente |
 | [`docs/testes.md`](docs/testes.md) | Estratégia de teste, rastreabilidade e o gate de cobertura |
 
 Decisões de arquitetura e o histórico do processo ficam em `.specs/` na raiz do workspace.

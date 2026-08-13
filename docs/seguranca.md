@@ -45,6 +45,7 @@ Ficam abertas de propósito apenas:
 | --- | --- |
 | `POST /api/v1/auth/token/` e `/refresh/` | É onde a credencial vira token |
 | `GET /health/`, `GET /ready/` | Probes de liveness/readiness do Render (AD-011) |
+| `POST /webhooks/asaas/` | O Asaas não envia JWT; autentica pelo header `asaas-access-token` |
 
 **Single-tenant, declarado honestamente (AD-006)**: todo usuário autenticado enxerga todos os profissionais e consultas. Não há isolamento por clínica nem RBAC fino — é uma API administrativa interna. Multi-tenant é non-goal consciente desta entrega, não um esquecimento.
 
@@ -53,6 +54,7 @@ Ficam abertas de propósito apenas:
 | Escopo | Taxa | Aplica a |
 | --- | --- | --- |
 | `auth_token` | 5/min | `POST /api/v1/auth/token/` (`ScopedRateThrottle`) |
+| `asaas_webhook` | 60/min | `POST /webhooks/asaas/` (`ScopedRateThrottle`) |
 | `user` | 120/min | Tráfego autenticado, por usuário |
 | `anon` | 20/min | Tráfego anônimo, por IP |
 
@@ -106,7 +108,7 @@ O modelo `Profissional` guarda apenas nome social, profissão, endereço, contat
 
 `apps/profissionais/tests/test_privacidade.py` congela esse conjunto de campos: acrescentar coluna nova ao modelo quebra o teste e força uma revisão de privacidade consciente, em vez de o campo entrar de carona num PR de feature.
 
-Exclusão hoje: `DELETE /api/v1/profissionais/{id}/` remove o profissional e cascateia as consultas dele (AD-015). A trava financeira chega na Fase 6, quando `Cobranca` apontar para `Consulta` com `PROTECT`: a partir daí, excluir profissional com cobrança confirmada ou recebida falha com o código estável `profissional_com_cobranca` (SEC-09). A escolha é deliberada — sem modelo financeiro, um `PROTECT` agora seria uma regra sem fato para proteger.
+Exclusão: `DELETE` de profissional ou consulta com cobrança vinculada (qualquer status) devolve 409 `profissional_com_cobranca` / `consulta_com_cobranca` (AD-026). Sem cobrança, excluir profissional cascateia as consultas (AD-015). A trilha financeira começa no create: uma cobrança PENDENTE já trava o delete.
 
 Não há soft-delete nem lixeira: exclusão é definitiva, o que atende ao direito de eliminação da LGPD e é registrado como trade-off (perda de histórico).
 
@@ -118,12 +120,12 @@ Não há soft-delete nem lixeira: exclusão é definitiva, o que atende ao direi
 | API2 Broken Authentication | JWT com TTL curto, rotação e blacklist; throttle dedicado no endpoint de credenciais |
 | API3 Broken Object Property Level Authorization | Serializers com campos explícitos; `contato` sai da listagem e só aparece no detalhe |
 | API4 Unrestricted Resource Consumption | Throttle por usuário/anônimo **e** paginação com teto de 100 por página (Fase 5). Resíduo: cache de throttle por processo |
-| API5 Broken Function Level Authorization | Permissão default fail-closed; exceções (token, probes) são explícitas e testadas |
+| API5 Broken Function Level Authorization | Permissão default fail-closed; exceções (token, probes, webhook Asaas) são explícitas e testadas. O webhook não aceita JWT no lugar do `asaas-access-token` |
 | API6 Unrestricted Access to Sensitive Business Flows | Anti–double booking no banco (`UniqueConstraint` parcial) impede corrida de agendamento |
-| API7 SSRF | Sem escopo: nenhuma URL fornecida pelo cliente é buscada pelo servidor. Reavaliar na Fase 6 (webhooks Asaas) |
+| API7 SSRF | Nenhuma URL fornecida pelo cliente é buscada pelo servidor. O webhook é inbound: validamos o token, não fazemos fetch. Extra JSON é ignorado; o body não é persistido |
 | API8 Security Misconfiguration | `check --deploy` sem issues, settings por ambiente travados por teste, `DEBUG=False` fora do local |
-| API9 Improper Inventory Management | Rotas versionadas em `/api/v1/`; OpenAPI publicado na Fase 5 |
-| API10 Unsafe Consumption of APIs | Escopo da Fase 6: validação de assinatura e idempotência do webhook Asaas |
+| API9 Improper Inventory Management | Rotas versionadas em `/api/v1/`; OpenAPI em local/staging; webhook documentado fora de `/api/v1/` |
+| API10 Unsafe Consumption of APIs | Mock não chama rede. Webhook: `compare_digest` no token, UNIQUE em `event.id`, máquina monotônica CONFIRMED≠RECEIVED. Replay devolve 200 sem reaplicar |
 
 ## Limitações honestas desta fase
 
@@ -132,5 +134,5 @@ Não há soft-delete nem lixeira: exclusão é definitiva, o que atende ao direi
 | Throttle conta por processo (`LocMemCache`) | Redis, fora do escopo do desafio |
 | Documentação (`/api/docs/`, `/api/schema/`) é inventário de API; fica desligada em produção por `SPECTACULAR_ENABLED` (AD-025) | Decisão consciente |
 | Sem RBAC/multi-tenant (AD-006) | Non-goal declarado |
-| Bloqueio de exclusão com cobrança ainda não existe (SEC-09) | Fase 6 |
+| ~~Bloqueio de exclusão com cobrança~~ — 409 `profissional_com_cobranca` / `consulta_com_cobranca` (AD-026) | Fase 6 ✔ |
 | Suíte roda em SQLite no host local (AD-017) | Fase 7 (CI em Postgres 16) |
