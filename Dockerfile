@@ -31,6 +31,9 @@ WORKDIR /app
 COPY --from=build /build/.venv /opt/venv
 COPY --chown=appuser:appuser . /app
 
+# WORKDIR cria /app como root; sem isto, collectstatic (appuser) falha em PermissionError.
+RUN mkdir -p /app/staticfiles && chown -R appuser:appuser /app
+
 USER appuser
 
 EXPOSE 8000
