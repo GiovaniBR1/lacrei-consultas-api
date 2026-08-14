@@ -38,4 +38,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/health/' % os.environ.get('PORT','8000'))"
 
-CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60"]
+# Release no start: migrate + collectstatic + gunicorn.
+# Deixe o campo Docker Command do Render VAZIO — override quebra fácil (quoting) e mascara este CMD.
+# WEB_CONCURRENCY: Render free injeta 1; --workers 2 no free tier costuma OOM (exit 137).
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-1} --timeout 60"]

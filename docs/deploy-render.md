@@ -74,13 +74,19 @@ Repita o Web Service Docker com nome `api-staging` trocado por **`api-prod`**.
 
 ## 4. Migrate e collectstatic no release
 
-O `Dockerfile` não roda migrate nem `collectstatic`. No Web Service, defina o **Start Command** (ou Pre-Deploy Command, se o plano oferecer) para:
+O `CMD` do `Dockerfile` já roda `migrate --noinput`, `collectstatic --noinput` e sobe o gunicorn (workers = `WEB_CONCURRENCY`, default 1).
+
+**Docker Command no Dashboard: deixe vazio.** Override do CMD é incomum no Render e é a causa mais comum de `Exited with status 128` sem traceback Python (quoting/`sh -c` mal colado). O build pode estar OK e o start morrer na hora.
+
+Se precisar override (não recomendado), use **uma** linha no formato da [doc Render](https://render.com/docs/docker):
 
 ```bash
-sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60"
+/bin/sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-1} --timeout 60"
 ```
 
-WhiteNoise serve `STATIC_ROOT`. Sem `collectstatic`, o deploy Docker sobe a API mas os estáticos de admin/schema podem faltar.
+Alternativa: Pre-Deploy Command só com migrate/collectstatic e Docker Command vazio (CMD do Dockerfile sobe o gunicorn). Confirme no plano se Pre-Deploy está disponível.
+
+WhiteNoise serve `STATIC_ROOT`. Sem `collectstatic`, a API sobe mas estáticos de admin/schema podem faltar.
 
 O processo escuta `0.0.0.0:$PORT` (Render injeta `PORT`).
 
