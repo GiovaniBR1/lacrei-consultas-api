@@ -53,7 +53,7 @@ A suíte local continua em **SQLite** (AD-017). O quality gate real usa Postgres
 
 O comando de teste já respeita `DATABASE_URL`; no GitHub Actions a variável aponta para o service container.
 
-Smoke de `/ready/` contra URLs Render **não** entra neste gate. Está especificado na Fase 8 e bloqueado por AD-003.
+Smoke de `/ready/` contra URLs Render **não** entra neste gate local. Verificado em 2026-08-14: staging e produção → HTTP 200.
 
 ## Convenções
 

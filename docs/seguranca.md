@@ -155,6 +155,6 @@ Itens desta entrega, não um ASVS completo. ❌ não é esquecimento: é limite 
 | Multi-tenant / RBAC fino | ❌ | Non-goal (AD-006) |
 | Redis para throttle compartilhado | ❌ | LocMemCache por processo (AD-022) |
 | Soft-delete / lixeira | ❌ | Hard-delete (ADR-0005) |
-| URLs Render com `/ready/` 200 | ❌ | Bloqueado AD-003 |
+| URLs Render com `/ready/` 200 | ✅ | staging + prod 200 em 2026-08-14 |
 | Sentry | ❌ | Opcional; DSN ausente = pular |
 

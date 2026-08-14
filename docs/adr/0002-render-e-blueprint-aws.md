@@ -15,7 +15,7 @@ O aceite pede staging e produção na AWS ou serviço equivalente. O prazo é de
 - Sem conta AWS e sem custo nesta entrega
 - Isolamento real de dados entre staging e produção no futuro
 - Caminho de upgrade quando o Postgres free expirar
-- AD-003: não provisionar Render nem AWS nesta sessão
+- AD-003: Render provisionado em 2026-08-14 (URLs em README / deploy-render.md)
 
 ## Considered Options
 
@@ -25,7 +25,7 @@ O aceite pede staging e produção na AWS ou serviço equivalente. O prazo é de
 
 ## Decision Outcome
 
-Chosen option: **Render agora; AWS só blueprint**, because AD-002. Deploy oficial: dois Web Services Docker (`api-staging`, `api-prod`) e um Postgres free compartilhado. Passos no runbook `docs/deploy-render.md`. Sem `render.yaml` na raiz enquanto AD-003 estiver ativo (AD-028). Esta ADR **não provisiona** nenhum recurso.
+Chosen option: **Render agora; AWS só blueprint**, because AD-002. Deploy oficial: dois Web Services Docker (`api-staging`, `api-prod`) e um Postgres free compartilhado. Passos no runbook `docs/deploy-render.md`. Sem `render.yaml` na raiz (AD-028). AWS continua **não** provisionada.
 
 Evolução AWS (documentada, não criada):
 
@@ -40,14 +40,14 @@ O Django lê `DJANGO_SETTINGS_MODULE` (`config.settings.staging` / `production`)
 ### Positive Consequences
 
 - Entrega cabe no free tier e no prazo
-- Revisor executa o runbook depois de limpar AD-003
+- Staging e produção Live com smoke `/ready/` 200 (2026-08-14)
 - O blueprint AWS deixa claro o isolamento que o free tier não dá
 
 ### Negative Consequences
 
 - Staging e produção compartilham o mesmo banco até o upgrade
 - Cold start ~15 min idle no Web Service free
-- Sem evidência de URL HTTPS até a sessão de conta Render
+- Ensaio deliberado de Rollback no Dashboard permanece opcional pós-Live
 
 ## Pros and Cons of the Options
 

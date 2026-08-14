@@ -1,8 +1,8 @@
 # Rollback Render (plano)
 
-Este documento descreve como **voltar a API** para um commit/release anterior no Render. **Não execute** enquanto AD-003 estiver ativo. Não há evidência real nesta sessão.
+Este documento descreve como **voltar a API** para um commit/release anterior no Render.
 
-Alvo preferencial de ensaio: Web Service `api-staging`. Produção (`api-prod`) segue o mesmo procedimento só depois de staging comprovado.
+Alvo preferencial de ensaio: Web Service `api-staging` (https://api-staging-4gl6.onrender.com). Produção (`api-prod`, https://api-prod-745u.onrender.com) segue o mesmo procedimento.
 
 ## Identificador (AD-029)
 
@@ -16,8 +16,8 @@ A tag **`latest` é proibida como único identificador**. `latest` se move. “R
 2. Abra a lista de **Deploys** (histórico).
 3. Localize o deploy **anterior ao ruim** pelo SHA (ou pelo deploy id). Confira a data.
 4. Dispare **Rollback** nesse deploy, ou **Manual Deploy** fixando o mesmo SHA. Não escolha “latest”.
-5. Espere o health check `/health/` passar. O smoke `/ready/` só depois de AD-003 (Fase 8).
-6. Preencha o slot de evidência (seção posterior; valores `pendente` até existir URL real).
+5. Espere o health check `/health/` passar e confirme `GET /ready/` → 200.
+6. Preencha o slot de evidência (seção posterior) após um ensaio real no Dashboard.
 
 Se o deploy anterior **não** estiver na lista (retention curta do free tier), o fallback é um novo deploy **do mesmo SHA** a partir do GitHub, ainda assim identificando o SHA — nunca `latest`.
 
@@ -32,19 +32,19 @@ Não faça `RemoveField` / `AlterField` destrutivo no mesmo deploy do código qu
 
 Regra prática: se o incidente é só de código, volte o SHA. Se o incidente é de schema já contraído, o rollback de app **não** desfaz a migration — aí o caminho é uma migration de avanço (forward-fix), não um rewind.
 
-## Evidência (pendente AD-003)
+## Evidência
 
-Depois de um rollback **real** em staging, preencha esta tabela. Dois deploys + um rollback. Não invente URL nem SHA.
+Serviços Live (2026-08-14). Ensaio deliberado de Rollback no Dashboard ainda não executado nesta sessão — preencha SHA/deploy id após o clique real.
 
 | Campo | Valor |
 | --- | --- |
-| timestamp (ISO-8601, America/Sao_Paulo) | pendente (AD-003) |
-| URL HTTPS de staging | pendente (AD-003) |
-| SHA before (deploy ruim) | pendente (AD-003) |
-| SHA after (rollback) | pendente (AD-003) |
-| deploy id before / after | pendente (AD-003) |
-
-Enquanto AD-003 estiver ativo, os valores permanecem `pendente`. Não cole hostname `onrender.com` fabricado.
+| timestamp (ISO-8601, America/Sao_Paulo) | 2026-08-14T17:52:00-03:00 (Live + smoke; sem ensaio Rollback) |
+| URL HTTPS de staging | https://api-staging-4gl6.onrender.com |
+| URL HTTPS de produção | https://api-prod-745u.onrender.com |
+| SHA Live (ambos) | `d5e6664` |
+| deploy id produção (primeiro Live) | `dep-d9vnv60jo6nc73au86g0` |
+| SHA before / after (ensaio Rollback) | pendente (ação humana no Dashboard) |
+| deploy id before / after (ensaio Rollback) | pendente (ação humana no Dashboard) |
 
 ## Sentry (opcional)
 

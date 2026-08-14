@@ -1,10 +1,13 @@
 # Deploy Render (plano)
 
-Este documento é o runbook da topologia **2 Web Services + 1 Postgres free**. **Não execute** os passos de create enquanto AD-003 estiver ativo. Não há `render.yaml` na raiz de propósito (AD-028): um Blueprint ligado ao Git provisionaria recursos.
+Este documento é o runbook da topologia **2 Web Services + 1 Postgres free**. Serviços provisionados em 2026-08-14 (Oregon). Não há `render.yaml` na raiz de propósito (AD-028): um Blueprint ligado ao Git provisionaria recursos.
 
-URLs reais de staging e produção: **pendentes (AD-003)**. Não invente hostname `onrender.com`.
+| Ambiente | URL HTTPS |
+| --- | --- |
+| Staging (`api-staging`) | https://api-staging-4gl6.onrender.com |
+| Produção (`api-prod`) | https://api-prod-745u.onrender.com |
 
-Health check da plataforma: `GET /health/` (liveness, sem DB). Smoke pós-deploy: `GET /ready/` (readiness com `SELECT 1`) — só depois de AD-003.
+Health check da plataforma: `GET /health/` (liveness, sem DB). Smoke pós-deploy: `GET /ready/` (readiness com `SELECT 1`).
 
 ## 0. Pré-requisitos (quando desbloquear)
 
@@ -90,16 +93,14 @@ WhiteNoise serve `STATIC_ROOT`. Sem `collectstatic`, a API sobe mas estáticos d
 
 O processo escuta `0.0.0.0:$PORT` (Render injeta `PORT`).
 
-## 5. Smoke `/ready/` (bloqueado)
-
-Quando AD-003 for limpo e os hostnames existirem:
+## 5. Smoke `/ready/`
 
 ```bash
-curl -sfS "https://<hostname-staging>/ready/"
-curl -sfS "https://<hostname-prod>/ready/"
+curl -sfS "https://api-staging-4gl6.onrender.com/ready/"
+curl -sfS "https://api-prod-745u.onrender.com/ready/"
 ```
 
-Esperado: HTTP 200. Não cole URL inventada no README. JWT não é exigido em `/ready/` (probe). Um smoke autenticado extra (`POST /api/v1/auth/token/` + listagem) é opcional e usa o usuário do `make seed` **somente em staging**.
+Esperado: HTTP 200. Verificado em 2026-08-14 (também `/health/`, 2 rodadas). JWT não é exigido em `/ready/` (probe). Smoke autenticado (`POST /api/v1/auth/token/` + listagem) é opcional e depende do usuário do `make seed` **somente em staging** (401 se o seed ainda não rodou no Postgres compartilhado).
 
 ## 6. Trade-offs do free tier (honestos)
 

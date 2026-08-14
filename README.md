@@ -86,18 +86,18 @@ O badge abaixo usa o nome proposto do repositório público (`lacrei-consultas-a
 
 `https://github.com/<owner>/lacrei-consultas-api/actions/workflows/ci.yml/badge.svg`
 
-Smoke de `/ready/` nas URLs Render: ver runbook; execução bloqueada por AD-003.
+Smoke de `/ready/` nas URLs Render: ver runbook [`docs/deploy-render.md`](docs/deploy-render.md). Em 2026-08-14: staging e produção responderam HTTP 200 em `/health/` e `/ready/` (2 rodadas).
 
 ## Por que Render + blueprint AWS
 
-O aceite pede staging e produção na AWS **ou serviço equivalente**. O deploy oficial desta entrega é o [Render](https://render.com): dois Web Services (`api-staging`, `api-prod`) e **um** Postgres free compartilhado. AWS fica só como evolução: App Runner + ECR + RDS isolado por ambiente. Nada disso é provisionado agora (AD-003).
+O aceite pede staging e produção na AWS **ou serviço equivalente**. O deploy oficial desta entrega é o [Render](https://render.com): dois Web Services (`api-staging`, `api-prod`) e **um** Postgres free compartilhado. AWS fica só como evolução: App Runner + ECR + RDS isolado por ambiente.
 
 Passos (Dashboard, sem Blueprint aplicável): [`docs/deploy-render.md`](docs/deploy-render.md). Decisão e caminho AWS: [`docs/adr/0002-render-e-blueprint-aws.md`](docs/adr/0002-render-e-blueprint-aws.md).
 
 | Ambiente | URL HTTPS | Status |
 | --- | --- | --- |
-| Staging (`api-staging`) | pendente | AD-003 — não inventar host `onrender.com` |
-| Produção (`api-prod`) | pendente | AD-003 — não inventar host `onrender.com` |
+| Staging (`api-staging`) | https://api-staging-4gl6.onrender.com | Live — `/health/` e `/ready/` 200 |
+| Produção (`api-prod`) | https://api-prod-745u.onrender.com | Live — `/health/` e `/ready/` 200 |
 
 Trade-offs conscientes do free tier: um único banco entre staging e produção; expiry ~30 dias; cold start após ~15 min idle. Isolamento real de dados entra no blueprint AWS (RDS ×2).
 
@@ -109,8 +109,8 @@ Trade-offs conscientes do free tier: um único banco entre staging e produção;
 | [`docs/seguranca.md`](docs/seguranca.md) | JWT, throttle, CORS, logs sem PII, privacidade, mapa OWASP API Top 10 |
 | [`docs/adr/0001-asaas-mock-first.md`](docs/adr/0001-asaas-mock-first.md) | Asaas mock-first, split `percentualValue`, webhook idempotente |
 | [`docs/adr/0002-render-e-blueprint-aws.md`](docs/adr/0002-render-e-blueprint-aws.md) | Render agora; App Runner + ECR + RDS ×2 depois |
-| [`docs/deploy-render.md`](docs/deploy-render.md) | Runbook Render (não executar enquanto AD-003) |
-| [`docs/rollback.md`](docs/rollback.md) | Rollback por SHA/deploy id; evidência pendente (AD-003) |
+| [`docs/deploy-render.md`](docs/deploy-render.md) | Runbook Render (staging + produção Live) |
+| [`docs/rollback.md`](docs/rollback.md) | Rollback por SHA/deploy id; ensaio Dashboard opcional pós-Live |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Pipeline CI e split/webhook (Mermaid) |
 | [`docs/decision-log.md`](docs/decision-log.md) | Pivôs datados |
 | [`docs/entrega-tech-lead.md`](docs/entrega-tech-lead.md) | 6 perguntas (template) + rascunho de e-mail **não enviado** |

@@ -4,7 +4,12 @@
 **Repo proposto:** `lacrei-consultas-api` (AD-013)  
 **Nota:** o texto original das 6 perguntas do e-mail **não está neste repositório**. Este documento segue o template do roadmap. Se o e-mail divergir, atualizar aqui **antes** de enviar (AD-013). **Não enviar automaticamente.**
 
-URLs de staging e produção: **pendente (AD-003)**. Não inventar host `onrender.com`.
+URLs:
+
+- Staging: https://api-staging-4gl6.onrender.com
+- Produção: https://api-prod-745u.onrender.com
+
+Repo público: https://github.com/GiovaniBR1/lacrei-consultas-api
 
 ---
 
@@ -26,7 +31,7 @@ JWT single-tenant (ADR-0003). Só `nome_social`; sem CPF, orientação, nome civ
 
 ## 5. Deploy e rollback
 
-Deploy oficial: Render, 2 Web Services + 1 Postgres free. AWS: blueprint App Runner + ECR + RDS ×2, **não provisionado**. Runbooks: [`docs/deploy-render.md`](deploy-render.md), [`docs/rollback.md`](rollback.md). Rollback por git SHA / deploy id (AD-029); `latest` sozinho é proibida. Evidência de rollback real: pendente (AD-003).
+Deploy oficial: Render Live (staging + produção), 2 Web Services + 1 Postgres free. AWS: blueprint App Runner + ECR + RDS ×2, **não provisionado**. Runbooks: [`docs/deploy-render.md`](deploy-render.md), [`docs/rollback.md`](rollback.md). Rollback por git SHA / deploy id (AD-029); `latest` sozinho é proibida. Smoke `/health/` + `/ready/` 200 nos dois hosts (2026-08-14). Ensaio de Rollback no Dashboard: opcional (procedimento documentado).
 
 ## 6. Alinhamento com a missão LGBTQIAPN+
 
@@ -44,15 +49,15 @@ Olá,
 
 Segue o desafio de Back-end (Tech Lead / voluntariado).
 
-- Repositório: <URL pública após push — pendente>
-- Staging HTTPS: pendente (AD-003)
-- Produção HTTPS: pendente (AD-003)
+- Repositório: https://github.com/GiovaniBR1/lacrei-consultas-api
+- Staging HTTPS: https://api-staging-4gl6.onrender.com
+- Produção HTTPS: https://api-prod-745u.onrender.com
 - Docs de entrega: docs/entrega-tech-lead.md
-- Rollback: docs/rollback.md (evidência após conta Render)
+- Rollback: docs/rollback.md
 
-Não colei hostname onrender.com inventado. Quando a conta Render existir, atualizo as duas URLs e o slot de evidência.
+Smoke: GET /health/ e GET /ready/ → 200 em staging e produção.
 
 Atenciosamente,
 ```
 
-Este rascunho **não deve ser enviado** por agente ou script. Envio é ação humana depois do push e, se possível, depois de limpar AD-003.
+Este rascunho **não deve ser enviado** por agente ou script. Envio é ação humana.
